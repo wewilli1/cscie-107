@@ -1,0 +1,79 @@
+---
+title: "drug-screening"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# load libraries
+library(dplyr)
+library(readr)
+library(ggplot2)
+library(caret)
+library(pROC)
+```
+
+```{r}
+# read the training data file
+yactives <- read_csv("yactives_training_set_June10_A.csv")
+yactives$P1 = ifelse(yactives$P1 == 1, "true", "false")
+yactives <- mutate(yactives, P1 = as.factor(P1)) %>%
+  select(-ID, -P2, -P3, -P4, -P5, -P6, -P7, -P8, -P9, -P10)
+
+# get the training / test partition indices
+training_part <- createDataPartition(y = yactives$P1, p = 0.8)
+
+# create a training set
+train_set <- slice(yactives, training_part$Resample1)
+
+# wew to do: do we need the training class?
+# create a training class
+train_class <- train_set %>% select(P1) %>% .$P1
+
+# create a test set and class for P1
+test_set <- slice(yactives, -training_part$Resample1)
+test_class <- as.factor(test_set %>% select(P1) %>% .$P1)
+#test_class <- test_set %>% select(P1)
+
+# create a KNN model
+control <- trainControl(method = 'cv', number = 10, p = 0.8, 
+                        classProbs = TRUE, summaryFunction = twoClassSummary)
+knnFit <- train(P1 ~ ., data = train_set, method = "knn", trControl = control, 
+                tuneLength = 1, tuneGrid = data.frame(k = seq(3, 101, 2)))
+
+# fit the test set to the KNN model
+knnPredict <- predict(knnFit, test_set, type = "prob")
+
+#Get the confusion matrix to see accuracy value and other parameter values
+confMatrix <- confusionMatrix(knnPredict, test_set$P1)
+confMatrix
+
+# plot the ROC curve
+knnROC <- roc(test_set$P1, knnPredict[,"true"], levels = rev(test_set$P1))
+knnROC
+plot(knnROC, type="S", print.thresh = 0.5)
+plot(knnROC)
+
+```
+
+Now Try Random Forest
+```{r}
+# Create a Random forrest model
+# default number of trees to grow = 500
+ctrl <- trainControl(method="cv", number = 2,
+                     classProbs = TRUE, summaryFunction = twoClassSummary)
+rfFit <- train(P1 ~ ., data = train_set, method = "rf", 
+               trControl = ctrl, tuneLength = 3)
+rfFit
+plot(rfFit)
+
+# predict class P1 using the random forest model
+rfPredict <- predict(rfFit, newdata = test_set)
+confusionMatrix(rfPredict, test_set$P1)
+
+rfPredict <- predict(rfFit, newdata = test_set, type="prob")
+rfROC <- roc(test_set$P1, rfPredict[,"true"], levels = rev(test_set$P1))
+rfROC
+```
+
