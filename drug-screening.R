@@ -1,22 +1,13 @@
----
-title: "drug-screening"
-output: html_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-
-# load libraries
 library(dplyr)
 library(readr)
 library(ggplot2)
 library(caret)
 library(pROC)
+library(ROCR)
 library(parallel)
-```
+library(randomForest)
+library(lubridate)
 
-
-```{r}
 ###############################################################################
 # Function Name: read_yactives (Helper Function)
 # Inputs: file_name: A string representing the file name of the yactives file.
@@ -25,10 +16,12 @@ library(parallel)
 ###############################################################################
 read_yactives <- function(file_name){
   yactives <- read_csv("yactives_training_set_June10_A.csv")
-
+  
   if (small_yactives_test_data_enabled){
-    yactives <- filter(yactives, ID < 5175364)
+    yactives <- filter(yactives, ID < 5350843)
   }  
+  
+  return(yactives)
 }
 
 ###############################################################################
@@ -53,7 +46,7 @@ get_classes <- function(yactives){
     select(starts_with("P")) %>%
     mutate_each(funs(ifelse(. == 1, "true", "false"))) %>%
     mutate_each(funs(as.factor(.)))
-
+  
   return(classes)
 }
 
@@ -142,7 +135,8 @@ process_knn <- function(train_set, train_class,
   # if max_k was not overridden by the caller
   if (max_k == 0){
     # calculate the max K
-    max_k <- length(train_class)
+    # wew to do: review this
+    max_k <- length(train_class) / 2
     # if max_k is even
     if (max_k %% 2 == 0){
       # make max_k odd
@@ -164,8 +158,7 @@ process_knn <- function(train_set, train_class,
   
   # plot the ROC curve
   knn_roc <- roc(test_class, knn_predict[,"true"], 
-                levels = rev(test_class))
-  plot(knn_roc, type="S", print.thresh = 0.5)
+                 levels = rev(test_class))
   plot(knn_roc)
   
   ret_list <- list(fit = knn_fit, predict = knn_predict, roc = knn_roc)
@@ -189,34 +182,18 @@ process_knn <- function(train_set, train_class,
 # can be accessed with list tag values "fit", prdict", and "roc".
 ###############################################################################
 process_rf <- function(train_set, train_class, 
-                       test_set, test_class,
-                       num_cross_validations = 10,
-                       train_percentage = 0.8){
-  # create a training control object which includes data to enable ROC summary
-  control <- trainControl(method = 'cv', 
-                          number = num_cross_validations, 
-                          p = train_percentage, 
-                          classProbs = TRUE, summaryFunction = twoClassSummary)
+                       test_set, test_class){
+  # fit the test set to the random forest model
+  rf_fit <- randomForest(train_set, train_class, importance = TRUE, proximity = TRUE)
   
-  rf_fit <- train(train_set, train_class, method = "rf", 
-                  trControl = control)
+  # create the prediction object
+  rf_predict <- prediction(rf_fit$votes[,2], train_class)
   
-  # fit the test set to the rf model and create a prediction
-  rf_predict <- predict(rf_fit, test_set, type = "prob")
+  #AUC score
+  auc_score <- performance(prediction.obj = rf_predict, measure = 'auc')@y.values
   
-  #Get the confusion matrix to see accuracy value and other parameter values
-  # wew to do: Fix this
-  # confMatrix <- confusionMatrix(rf_predict, test_set$P1)
-  # confMatrix
-  
-  # plot the ROC curve
-  test_class_factors <- test_class[[1]]
-  rf_roc <- roc(test_class_factors, rf_predict[,"true"], 
-                levels = rev(test_class_factors))
-  plot(rf_roc, type="S", print.thresh = 0.5)
-  plot(rf_roc)
-  
-  ret_list <- list(fit = rf_fit, predict = rf_predict, roc = rf_roc)
+  # package the fit, prediction, and score into a list and return it to caller
+  ret_list <- list(fit = rf_fit, predict = rf_predict, auc_score = auc_score)
   return(ret_list)
 }
 
@@ -243,6 +220,7 @@ process_models <- function(train_test_list){
   # create empty lists for each model type
   knn_list <- list()
   rf_list <- list()
+  count <- 1
   
   # for each phenotype class in the class list
   for(phen_class in class_names){
@@ -256,6 +234,9 @@ process_models <- function(train_test_list){
     
     # if knn model processing is enabled
     if (knn_enabled){
+      cat("Running KNN Model", count, "\n")
+      count <- count + 1
+      
       # run the KNN model
       knn_results_list <- 
         process_knn(train_set, train_class_n, test_set, test_class_n)
@@ -267,6 +248,9 @@ process_models <- function(train_test_list){
     # if random forest processing is enabled
     if (rf_enabled){
       # run the random forest model
+      cat("Running Random Forest Model", count, format(Sys.time(), "%c"), "\n")
+      count <- count + 1
+      
       rf_results_list <- 
         process_rf(train_set, train_class_n, test_set, test_class_n)
       
@@ -286,11 +270,11 @@ process_models <- function(train_test_list){
 # main program starts here
 ###############################################################################
 # use the following 2 variables to enable and disable specific models.
-knn_enabled = TRUE
-rf_enabled = FALSE
+knn_enabled = FALSE
+rf_enabled = TRUE
 
-# use the following variable to reduce the yactives data to 100 rows.
-small_yactives_test_data_enabled = TRUE
+# use the following variable to reduce the yactives data to 250 rows.
+small_yactives_test_data_enabled = FALSE
 
 # read the training data file
 yactives <- read_yactives("yactives_training_set_June10_A.csv")
@@ -308,5 +292,8 @@ train_test_list <- create_train_test_sets(yactives, train_prop)
 # one can use the '$' notation.  For example, access the KNN P3 ROC 
 # model as follows: model_results_list$knn$P3$roc
 model_results_list <- process_models(train_test_list)
-```
 
+# print the ROC AUC results for KNN
+lapply(model_results_list$rf, function(i){
+  i$auc_score
+})
