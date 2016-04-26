@@ -248,7 +248,7 @@ process_models <- function(train_test_list){
       knn_results_list <- 
         process_knn(train_set, train_class_n, test_set, test_class_n)
       duration <- difftime(Sys.time(), start_time, units = "mins")
-      cat("Run Time:", as.numeric(duration), "minutes\n")
+      cat("Run Time:", round(as.numeric(duration), 2), "minutes\n")
       
       # save the model results in the KNN model list
       knn_list[[phen_class]] <- knn_results_list
@@ -263,7 +263,7 @@ process_models <- function(train_test_list){
       rf_results_list <- 
         process_rf(train_set, train_class_n, test_set, test_class_n)
       duration <- difftime(Sys.time(), start_time, units = "mins")
-      cat("Run Time:", as.numeric(duration), "minutes\n")
+      cat("Run Time:", round(as.numeric(duration), 2), "minutes\n")
       
       # save the model results in the random forest model list
       rf_list[[phen_class]] <- rf_results_list  
