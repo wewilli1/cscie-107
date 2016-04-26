@@ -17,10 +17,6 @@ library(lubridate)
 read_yactives <- function(file_name){
   yactives <- read_csv("yactives_training_set_June10_A.csv")
   
-  if (small_yactives_test_data_enabled){
-    yactives <- filter(yactives, ID < 5350843)
-  }  
-  
   return(yactives)
 }
 
@@ -78,6 +74,11 @@ get_features <- function(yactives){
 # test_train_data[["test_set"]].
 ###############################################################################
 create_train_test_sets <- function(yactives, p_train){
+  # create a new class which is the logical OR of P7 and P8.  P7 and P8
+  # represent zebra fish death at 24 and 48 hours.  Combining these 2 
+  # phenotypes creates a single death predictor.
+  yactives <- yactives %>% mutate(P11 = P7 | P8)
+  
   # get the indices for the training partition
   training_part <- createDataPartition(y = yactives$P1, p = p_train)
   
@@ -92,6 +93,13 @@ create_train_test_sets <- function(yactives, p_train){
   # separate the test phenotype classes from the features
   test_class <- get_classes(test_set)
   test_set <- get_features(test_set)
+  
+  # if the small dataset flag is true
+  if (small_yactives_test_data_enabled){
+    # reduce the data size
+    test_class <- select_(test_class, .dots = small_test_class)
+    train_class <- select_(train_class, .dots = small_test_class)
+  }
   
   # create a vector of class names
   class_names <- colnames(test_class)
@@ -220,7 +228,6 @@ process_models <- function(train_test_list){
   # create empty lists for each model type
   knn_list <- list()
   rf_list <- list()
-  count <- 1
   
   # for each phenotype class in the class list
   for(phen_class in class_names){
@@ -234,12 +241,14 @@ process_models <- function(train_test_list){
     
     # if knn model processing is enabled
     if (knn_enabled){
-      cat("Running KNN Model", count, "\n")
-      count <- count + 1
+      cat("Running KNN Model for class", phen_class, "\n")
       
       # run the KNN model
+      start_time <- Sys.time()
       knn_results_list <- 
         process_knn(train_set, train_class_n, test_set, test_class_n)
+      duration <- difftime(Sys.time(), start_time, units = "mins")
+      cat("Run Time:", as.numeric(duration), "minutes\n")
       
       # save the model results in the KNN model list
       knn_list[[phen_class]] <- knn_results_list
@@ -247,12 +256,14 @@ process_models <- function(train_test_list){
     
     # if random forest processing is enabled
     if (rf_enabled){
-      # run the random forest model
-      cat("Running Random Forest Model", count, format(Sys.time(), "%c"), "\n")
-      count <- count + 1
+      cat("Running Random Forest Model for class", phen_class, "\n")
       
+      # run the random forest model
+      start_time <- Sys.time()
       rf_results_list <- 
         process_rf(train_set, train_class_n, test_set, test_class_n)
+      duration <- difftime(Sys.time(), start_time, units = "mins")
+      cat("Run Time:", as.numeric(duration), "minutes\n")
       
       # save the model results in the random forest model list
       rf_list[[phen_class]] <- rf_results_list  
@@ -269,12 +280,14 @@ process_models <- function(train_test_list){
 ###############################################################################
 # main program starts here
 ###############################################################################
-# use the following 2 variables to enable and disable specific models.
+# use the following variables to enable and disable specific models.
 knn_enabled = FALSE
 rf_enabled = TRUE
 
-# use the following variable to reduce the yactives data to 250 rows.
-small_yactives_test_data_enabled = FALSE
+# use the following variables to reduce the data size by selecting a single 
+# phenotype class.
+small_yactives_test_data_enabled <- FALSE
+small_test_class <- "P11"
 
 # read the training data file
 yactives <- read_yactives("yactives_training_set_June10_A.csv")
@@ -294,6 +307,7 @@ train_test_list <- create_train_test_sets(yactives, train_prop)
 model_results_list <- process_models(train_test_list)
 
 # print the ROC AUC results for KNN
-lapply(model_results_list$rf, function(i){
+auc_results <- lapply(model_results_list$rf, function(i){
   i$auc_score
 })
+auc_results
