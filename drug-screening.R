@@ -306,8 +306,25 @@ train_test_list <- create_train_test_sets(yactives, train_prop)
 # model as follows: model_results_list$knn$P3$roc
 model_results_list <- process_models(train_test_list)
 
+# wew to do: Take the example code in this section and move it to an 
+# Rmd file which presents visualizations
 # print the ROC AUC results for KNN
 auc_results <- lapply(model_results_list$rf, function(i){
   i$auc_score
 })
 auc_results
+
+# plot the ROC curve for the KNN model P7
+p7_roc <- performance(prediction.obj = model_results_list$rf$P7$predict, 
+                      measure = "tpr", x.measure = "fpr")
+plot(p7_roc)
+
+# add a 2nd curve to the same plot.
+p8_roc <- performance(prediction.obj = model_results_list$rf$P8$predict, 
+                      measure = "tpr", x.measure = "fpr")
+plot(p8_roc, add = TRUE, col = "red")
+
+# precision recall example plot
+p7_p_r <- performance(prediction.obj = model_results_list$rf$P7$predict, 
+                      measure = "prec", x.measure = "rec")
+plot(p7_p_r)
