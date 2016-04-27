@@ -306,6 +306,9 @@ train_test_list <- create_train_test_sets(yactives, train_prop)
 # model as follows: model_results_list$knn$P3$roc
 model_results_list <- process_models(train_test_list)
 
+# save the model_results_list to a file
+save(model_results_list, file = "model_results_list.RData")
+
 # wew to do: Take the example code in this section and move it to an 
 # Rmd file which presents visualizations
 # print the ROC AUC results for KNN
