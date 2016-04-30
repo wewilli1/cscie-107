@@ -9,18 +9,6 @@ library(randomForest)
 library(lubridate)
 
 ###############################################################################
-# Function Name: read_yactives (Helper Function)
-# Inputs: file_name: A string representing the file name of the yactives file.
-#         
-# Returns a data frame containing entire yactives data set.
-###############################################################################
-read_yactives <- function(file_name){
-  yactives <- read_csv("yactives_training_set_June10_A.csv")
-  
-  return(yactives)
-}
-
-###############################################################################
 # Function Name: get_classes (Helper Function)
 # Inputs: yactives: A data frame containing features and outcome classes.
 #                   Outcome classes are assumed to be in the form P1, P2, 
@@ -60,31 +48,43 @@ get_features <- function(yactives){
 }
 
 ###############################################################################
-# Function Name: create_train_test_sets (Helper Function)
+# Function Name: create_train_test_indep_sets (Helper Function)
 # Inputs: yactives: The entire yactives data set.
-#         p_train: The proportion of training data out of the entire 
-#                  yactives training data set.
+#         train_prop: The proportion of training data out of the entire 
+#                     yactives training data set.
+#         yactives_indep: An independent yacives drug data set (cancer drugs)
 #         
 # Returns a list containing training data, training class outcomes,
-# test data, test class outcomes, and phenotype class names 
-# (like P1, P2, ...).  Elements of the list can be accessed with list 
-# tag values train_class, train_set, test_class, test_set, and class_names.
-# For example, assuming the return value was named "test_train_data", access 
-# the training data set as follows: test_train_data$test_set or
-# test_train_data[["test_set"]].
+# test data, test class outcomes, phenotype class names 
+# (like P1, P2, ...), and drug ID's.  Elements of the list can be accessed 
+# with list tag values.  For example, assuming the return value was named 
+# "test_train_data", access the training data set as follows: 
+# test_train_data$test_set or test_train_data[["test_set"]].
 ###############################################################################
-create_train_test_sets <- function(yactives, p_train){
-  # create a new class which is the logical OR of P7 and P8.  P7 and P8
-  # represent zebra fish death at 24 and 48 hours.  Combining these 2 
-  # phenotypes creates a single death predictor.
-  yactives <- yactives %>% mutate(P11 = P7 | P8)
+create_train_test_indep_sets <- 
+  function(yactives_train, train_prop, yactives_indep){
+  # P2, P7, and P8 are "death" classes.  Create combinations of death 
+  # classes by logically ORing the permutations of P2, P7, and P8
+  yactives_train <- yactives_train %>% 
+    mutate(P11 = P2 | P7 | P8, P12 = P2 | P7, P13 = P2 | P8, P14 = P7 | P8)
   
-  # get the indices for the training partition
-  training_part <- createDataPartition(y = yactives$P1, p = p_train)
+  # save the entire training set and class for the random forest (RF) model
+  # because we don't have to split into train / test in the RF model
+  train_set_rf <- get_features(yactives_train)
+  train_class_rf <- get_classes(yactives_train)
+  train_set_drug_id_rf <- select(yactives_train, ID)
+  
+  # For the rest of the models, create train and test by splitting into 
+  # train / test sets.  Start by getting the indices for the training partition
+  training_part <- createDataPartition(y = yactives_train$P1, p = train_prop)
   
   # create training and test data frames
-  train_set <- slice(yactives, training_part$Resample1)
-  test_set <- slice(yactives, -training_part$Resample1)
+  train_set <- slice(yactives_train, training_part$Resample1)
+  test_set <- slice(yactives_train, -training_part$Resample1)
+  
+  # Save the drug ID's for the train and test sets
+  train_set_drug_id <- select(train_set, ID)
+  test_set_drug_id <- select(test_set, ID)
   
   # separate the train phenotype classes from the features
   train_class <- get_classes(train_set)
@@ -96,7 +96,7 @@ create_train_test_sets <- function(yactives, p_train){
   
   # if the small dataset flag is true
   if (small_yactives_test_data_enabled){
-    # reduce the data size
+    # reduce the data size by selecting a single phenotype class
     test_class <- select_(test_class, .dots = small_test_class)
     train_class <- select_(train_class, .dots = small_test_class)
   }
@@ -104,12 +104,33 @@ create_train_test_sets <- function(yactives, p_train){
   # create a vector of class names
   class_names <- colnames(test_class)
   
+  # Remove the duplicate "ID" column from the yactives_indep data
+  yactives_indep <- yactives_indep[,-2]
+  
+  # save the yactives_indep drug ID's
+  indep_set_drug_id <- select(yactives_indep, ID)
+  
+  # remove the drug ID's from yactives_indep
+  yactives_indep <- select(yactives_indep, -ID)
+  
   # return a list of class and feature data frames
   return_list <- 
-    list(train_class = train_class, 
-         train_set = train_set, 
+    list(# random forest training set
+         train_set_rf = train_set_rf,
+         train_set_drug_id_rf = train_set_drug_id_rf,
+         train_class_rf = train_class_rf,
+         # split training set
+         train_set = train_set,
+         train_set_drug_id = train_set_drug_id,
+         train_class = train_class,
+         # split test set
+         test_set = test_set,
+         test_set_drug_id = test_set_drug_id,
          test_class = test_class, 
-         test_set = test_set, 
+         # independent set
+         indep_set = yactives_indep,
+         indep_set_drug_id = indep_set_drug_id,
+         # prediction class names
          class_names = class_names)
   return(return_list)
 }
@@ -180,42 +201,47 @@ process_knn <- function(train_set, train_class,
 #              class.
 # Inputs: train_set: A training set data frame excluding outcome classes.
 #         train_class: Class outcome single column data frame for the train set.
-#         test_set: A test set data frame excluding outcome classes.
-#         test_class: Class outcome single column data frame for the test set.
-#         num_cross_validations: The number of cross validations to perform.
-#         train_percentage: The proportion of test_set and test_class to use
-#                           for training.
+#         indep_set: The independent cancer drug data set
 #         
 # Returns a list containing fit, predict, roc objects.  Elements of the list 
 # can be accessed with list tag values "fit", prdict", and "roc".
 ###############################################################################
-process_rf <- function(train_set, train_class, 
-                       test_set, test_class){
+process_rf <- function(train_set, train_class, indep_set){
   # fit the test set to the random forest model
   rf_fit <- randomForest(train_set, train_class, importance = TRUE, proximity = TRUE)
   
   # create the prediction object
-  rf_predict <- prediction(rf_fit$votes[,2], train_class)
+  oob_vote_col <- 2
+  train_predict <- prediction(rf_fit$votes[,oob_vote_col], train_class)
+  
+  # use the model to make a prediction on the independent data set
+  indep_predict <- predict(rf_fit, type = "prob", newdata = indep_set)
   
   #AUC score
-  auc_score <- performance(prediction.obj = rf_predict, measure = 'auc')@y.values
+  # wew to do: Only call performance on the test set.
+  auc_score <- performance(prediction.obj = train_predict, measure = 'auc')@y.values
   
   # package the fit, prediction, and score into a list and return it to caller
-  ret_list <- list(fit = rf_fit, predict = rf_predict, auc_score = auc_score)
+  ret_list <- list(fit = rf_fit, train_predict = train_predict, 
+                   indep_predict = indep_predict, auc_score = auc_score)
+  
+  # return the random forest model list to the caller
   return(ret_list)
 }
 
 ###############################################################################
 # Function Name: process_models
 # Description: Top level function which coordinates collecting model data
-#              for all model types lik KNN, random forest, etc.
+#              for all model types like KNN, random forest, etc.  Each model
+#              can be enabled or disabled independently using a global 
+#              flag located in main.
 # Inputs: train_test_list: A list containing sublists of training factors, 
 #                          training classes, test factors, test classes,
 #                          and class names (P1, P2, P3, ...)
 # Returns a list containing sublists of model type, phenotype, and model summary 
 # For example, if the return value is assigned to the variable 
-# "model_results_list",  access the P3 KNN ROC object as follows: 
-# model_results_list$knn$P3$roc
+# "model_results_list",  access the P3 random forest ROC object as follows: 
+# model_results_list$rf$P3$roc
 ###############################################################################
 process_models <- function(train_test_list){
   # extract the individual train and test frames out of the master list
@@ -224,6 +250,9 @@ process_models <- function(train_test_list){
   train_class <- train_test_list[["train_class"]]
   test_set <- train_test_list[["test_set"]]
   test_class <- train_test_list[["test_class"]]
+  train_set_rf <- train_test_list[["train_set_rf"]]
+  train_class_rf <- train_test_list[["train_class_rf"]]
+  indep_set <- train_test_list[["indep_set"]]
   
   # create empty lists for each model type
   knn_list <- list()
@@ -231,13 +260,13 @@ process_models <- function(train_test_list){
   
   # for each phenotype class in the class list
   for(phen_class in class_names){
-    # extract the training class vector from the training class frame
+    # extract the split training class vector from the training class frame
     train_class_n <- select_(train_class, .dots = phen_class)
     train_class_n <- train_class_n[[1]]
     
-    # extract the test class vector from the training class frame
-    test_class_n <- select_(test_class, .dots = phen_class)
-    test_class_n <- test_class_n[[1]]  
+    # extract the random forest class vector from the RF class frame
+    train_class_rf_n <- select_(train_class_rf, .dots = phen_class)
+    train_class_rf_n <- train_class_rf_n[[1]]
     
     # if knn model processing is enabled
     if (knn_enabled){
@@ -246,7 +275,7 @@ process_models <- function(train_test_list){
       # run the KNN model
       start_time <- Sys.time()
       knn_results_list <- 
-        process_knn(train_set, train_class_n, test_set, test_class_n)
+        process_knn(train_set, train_class_n, test_set)
       duration <- difftime(Sys.time(), start_time, units = "mins")
       cat("Run Time:", round(as.numeric(duration), 2), "minutes\n")
       
@@ -256,12 +285,14 @@ process_models <- function(train_test_list){
     
     # if random forest processing is enabled
     if (rf_enabled){
-      cat("Running Random Forest Model for class", phen_class, "\n")
+      # save the start time
+      start_time <- Sys.time()
       
       # run the random forest model
-      start_time <- Sys.time()
-      rf_results_list <- 
-        process_rf(train_set, train_class_n, test_set, test_class_n)
+      cat("Running Random Forest Model for class", phen_class, 
+          "-", format(start_time), "\n")
+      rf_results_list <- process_rf(train_set_rf, train_class_rf_n, 
+                                    indep_set)
       duration <- difftime(Sys.time(), start_time, units = "mins")
       cat("Run Time:", round(as.numeric(duration), 2), "minutes\n")
       
@@ -272,8 +303,15 @@ process_models <- function(train_test_list){
   
   # concatenate the model lists together and return to the caller
   ret_model_results_list <- list()
-  ret_model_results_list$knn <- knn_list
-  ret_model_results_list$rf <- rf_list
+  if (knn_enabled){
+    ret_model_results_list$knn <- knn_list
+  }
+  
+  if (rf_enabled){
+    ret_model_results_list$rf <- rf_list
+    ret_model_results_list$rf_drug_id <- train_test_list$train_set_drug_id_rf
+  }
+  
   return(ret_model_results_list)
 }
 
@@ -289,45 +327,27 @@ rf_enabled = TRUE
 small_yactives_test_data_enabled <- FALSE
 small_test_class <- "P11"
 
-# read the training data file
-yactives <- read_yactives("yactives_training_set_June10_A.csv")
+# read the training data set
+yactives_train <- read_csv("yactives_training_set_2.csv")
+
+# read the independent test data
+yactives_indep <- read_csv("CTRPv2_test_set.csv")
 
 # get the training and test sets
 train_prop <- 0.8
-train_test_list <- create_train_test_sets(yactives, train_prop)
+train_test_list <- 
+  create_train_test_indep_sets(yactives_train, train_prop, yactives_indep)
 
-# Train the models
+# Proecess each model
 # Notes on how to use the model_results_list.  The model results 
 # list is a list of lists of lists. The top level is a list of models 
-# like knn and rf.  The second level is a list phenotypes like P1, P2, 
+# like knn and rf.  The second level is a list of phenotypes like P1, P2, 
 # P3, ... .  The third level is a list of model summary parameters like 
-# training object, fit object, roc object.  To access model parameters, 
-# one can use the '$' notation.  For example, access the KNN P3 ROC 
-# model as follows: model_results_list$knn$P3$roc
-model_results_list <- process_models(train_test_list)
+# fit object, predict object, and AUC score.  To access model parameters, 
+# one can use the '$' notation.  For example, access the random forest 
+# P3 ROC object as follows: model_results_list$rf$P3$roc
+model_results_list_1 <- process_models(train_test_list)
 
 # save the model_results_list to a file
-save(model_results_list, file = "model_results_list.RData")
+save(model_results_list_1, file = "model_results_list.R")
 
-# wew to do: Take the example code in this section and move it to an 
-# Rmd file which presents visualizations
-# print the ROC AUC results for KNN
-auc_results <- lapply(model_results_list$rf, function(i){
-  i$auc_score
-})
-auc_results
-
-# plot the ROC curve for the KNN model P7
-p7_roc <- performance(prediction.obj = model_results_list$rf$P7$predict, 
-                      measure = "tpr", x.measure = "fpr")
-plot(p7_roc)
-
-# add a 2nd curve to the same plot.
-p8_roc <- performance(prediction.obj = model_results_list$rf$P8$predict, 
-                      measure = "tpr", x.measure = "fpr")
-plot(p8_roc, add = TRUE, col = "red")
-
-# precision recall example plot
-p7_p_r <- performance(prediction.obj = model_results_list$rf$P7$predict, 
-                      measure = "prec", x.measure = "rec")
-plot(p7_p_r)
