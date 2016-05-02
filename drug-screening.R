@@ -316,6 +316,41 @@ process_models <- function(train_test_list){
 }
 
 ###############################################################################
+# Function Name: get_auc_results
+# Description: Helper function which extracts an AUC results vector from
+#              the model results list.
+# Inputs: 
+#   model_results_list: The master model results list.
+# Returns a vector containing the AUC scores for each phenotype.
+#
+###############################################################################
+get_auc_results <- function(model_results_list){
+  auc_results <- lapply(model_results_list$rf, function(i){
+    i[["auc_score"]]
+  })
+  auc_results <- unlist(auc_results)
+  return(auc_results)
+}
+
+###############################################################################
+# Function Name: get_roc_results
+# Description: Helper function which extracts an ROC results vector from
+#              the model results list.
+# Inputs: 
+#   model_results_list: The master model results list.
+# Returns a vector containing the ROC prediction objects for each phenotype.
+#
+###############################################################################
+get_roc_results <- function(model_results_list){
+  # extract a list of ROC objects from the model results list
+  roc_results <- lapply(model_results_list$rf, function(i){
+   i[["train_predict"]]
+  })
+  roc_results <- unlist(roc_results)
+  return(roc_results)
+}
+
+###############################################################################
 # main program starts here
 ###############################################################################
 # use the following variables to enable and disable specific models.
@@ -346,8 +381,17 @@ train_test_list <-
 # fit object, predict object, and AUC score.  To access model parameters, 
 # one can use the '$' notation.  For example, access the random forest 
 # P3 ROC object as follows: model_results_list$rf$P3$roc
-model_results_list_1 <- process_models(train_test_list)
+model_results_list <- process_models(train_test_list)
 
-# save the model_results_list to a file
-save(model_results_list_1, file = "model_results_list.Rdata")
+# save the master model_results_list to a file
+save(model_results_list, file = "model_results_list.Rdata")
 
+# extract a vector of AUC scores from the model results list and 
+# save the results to a file.
+auc_scores <- get_auc_results(model_results_list)
+save(auc_scores, file = "auc_scores.Rdata")
+
+# extract a vector of ROC predictions from the model results list
+# and save the results to a file.
+roc_results <- get_roc_results(model_results_list)
+save(roc_results, file = "roc_results.Rdata")
