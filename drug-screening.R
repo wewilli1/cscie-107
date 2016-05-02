@@ -349,5 +349,5 @@ train_test_list <-
 model_results_list_1 <- process_models(train_test_list)
 
 # save the model_results_list to a file
-save(model_results_list_1, file = "model_results_list.R")
+save(model_results_list_1, file = "model_results_list.Rdata")
 
