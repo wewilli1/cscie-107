@@ -1,0 +1,117 @@
+---
+title: "Prediction of Compounds Efficacy on Cancer Cells"
+author: "Yan Gu"
+date: "Sunday, May 01, 2016"
+output: html_document
+---
+
+The machine learning model generated and verified using the zebra fish model is used to predict drug efficacy on cancer cells. Although multiple phenotypes of zebra fish were used to generate the model, to simplify the study, only life/death is assessed for the cancer cells. Efficacy of compounds in killing cancer cells was predicted, the the predicted data were evaluated by comparing to true experimental data showing efficacy, reflected by EC50, which is the amound of drug needed to kill half of the cells.
+        The "Predictions.csv" file summarised predicted probability of compounds being efficacious on causing several phenotypes of cancer cells and their impact on cancer cell viability. Because the majority of the probability numbers are very small (smaller than 0.5), to choose the best response to work with, number of positive indicators were compared among those phenotypes. We determined that p11_true, which is the probability of the compounds being able to kill cancer cells will be the predicted data to be compared with true experimental data. This will show whether the prediction model generated using the zebra fish model could be used on mammalian cells. 
+        The cancer cell viability data are downloaded from
+ftp://caftpd.nci.nih.gov/pub/dcc_ctd2/Broad/CTRPv2.0_2015_ctd2_ExpandedDataset/CTRPv2.0_2015_ctd2_ExpandedDataset.zip. The txt file: v20.data.curves_post_qc.txt has the EC50 values of each compounds used in this study (apparent_ec50_umol). The EC50 values are later converted to arbitrary efficacy values for each compound. The experiment id (experiment_id) column has the information that later was related to the cell lines. File v20.meta.per_experiment.txt has the cell line id (master_ccl_id) that are later joined to the data.  
+        
+Read in and clean the viability data:
+```{r}
+viability <- read.table('v20.data.curves_post_qc.txt', header = TRUE)
+
+library(dplyr)
+viability_ec50 <- select(viability, experiment_id, apparent_ec50_umol, pred_pv_high_conc, master_cpd_id)
+colnames(viability_ec50) <- c('experiment_id', 'ec50','pred_pv_high_conc', 'ID')
+```
+
+The prediction data of the efficacy of the compounds using the zebra fish model is 
+```{r}
+predicted <- read.csv("predictions.csv") %>% select(-X)
+```
+
+The viability data and the prediction are joined by the compound ID:
+```{r}
+accuracy <- left_join(predicted, viability_ec50, by = 'ID')
+```
+
+plot the distribution of ec50 in log scale:
+```{r}
+hist(log10(accuracy$ec50), xlab = "log10_EC50 (umol)", ylab = "Frequency", main = "Distribution of EC50")
+```
+
+Correlation between predicted efficacy and measured efficacy reflected by converted EC50. The rationale is the lower the EC50 is, the more potent the drug potentially is. Therefore, EC50 is converted to some arbitrary number to be correlated with the predicted probability values in the prediction data set.
+```{r}
+true <- 1 - (log10(accuracy$ec50 + 10^(-30)) + 25)/50
+true[true < 0.3] <- 0.3
+true <- (true - 0.4)/0.6/0.8 
+true[true < 0] <- 0
+true[true >1] <- 1
+
+## calculate the correlation
+cor(true, accuracy$p11_true)
+```
+
+The value of correlation coefficient shows that there's no correlation between the predicted probability values and the converted EC50 values. 
+        Indeed, if we take a look at the predicted value, only 5% of the total are positive predictions (P > 0.6), that has caused the evaluation of the predictions difficult and the result might not be representative. 
+        
+The prediction is further evaluated by comparing the distribution of the log 10 scaled EC50 values of compounds that have been predicted to show positive results to the distribution shown before for all EC50 values:
+```{r}
+hist(log10(accuracy[which(accuracy$p11_true > 0.6),]$ec50), xlab = "log10_EC50 (umol)", ylab = "Frequency", main = "Distribution of EC50")
+```
+
+No big change in the distribution was observed.
+
+Now we are computing the percentage of predicted values that matches the true experimental data. Arbitrary threshold is set to differentiate efficacious compounds from others based on the EC50 (if log10EC50 is smaller than 0, the compound is efficacious). Similarly, for the prediction data, a threshold of 0.6 for probability is set. Probability above 0.6 means the compound is predicted to be efficacious.
+```{r}
+## threshold: EC50 < 1 is efficacious
+efficacy <- log10(accuracy$ec50)
+efficacy[efficacy < -1] <- 1
+efficacy[efficacy != 1] <- 0
+
+##threshold: p > 0.6 is efficacious
+p11 <- accuracy$p11_true > 0.6
+
+##percentage of predictions match true efficacy derived from EC50
+mean(efficacy == p11)
+```
+
+The high percent value is majorly due to that only a small portion of the predicted values indicate positive effect. Therefore, with a threshold that make the experimental data saying "FALSE", most of the predicted values will match the experimental data.
+
+Next, we are trying to see whether the prediction performs differently on different types of cells. The different cells are differentiated by cell line IDs. The cancer cell line information is joined to the current dataset by the experiment ID column.
+```{r}
+## cancer cell line
+cancer_cell <- read.table("v20.meta.per_experiment.txt", header = TRUE) %>% select(experiment_id, master_ccl_id)
+accuracy <- left_join(accuracy, cancer_cell, by = "experiment_id") %>% select(ID, p11_true, ec50, master_ccl_id)
+accuracy <- mutate(accuracy, Neg_log10_EC50 = -log10(ec50)) 
+accuracy <- accuracy[-which(accuracy$ec50 == 0),]
+corr <- accuracy %>% group_by(master_ccl_id) %>% summarise(cor(p11_true, Neg_log10_EC50))
+colnames(corr) <- c("master_ccl_id", "corr")
+
+##threshold
+accuracy1 <- mutate(accuracy, pred = p11_true > 0.6, true = Neg_log10_EC50 > 10)
+accuracy1 <- mutate(accuracy1, v = (pred == true))
+score <- accuracy1 %>% group_by(master_ccl_id) %>% summarise(mean(v), n())
+colnames(score) <- c('master_ccl_id', 'score', 'n')
+```
+
+The scores are calculated as the percentage of the predicted data that matches the experimentally predicted efficacy.
+
+The scores are ploted for each cell line:
+```{r}
+library(ggplot2)
+score <- score[-which(score$master_ccl_id > 1000),]
+p <- ggplot(score) + aes(x = master_ccl_id, y = score) + geom_point() + labs(title = 'Accuracy Score', x = 'Cell line ID', y = 'Score')
+p
+```
+
+There are some variations in the prediction model's performance on predicting the compounds' efficacy on different cancer cell lines. However, again, this is not very representative since artifacts could be brought in when majority of the predictions are negative for the cancer cells. For example, when a cancer cell line has more predictions being false, then by tuning the threshold of EC50 and making the experimental data telling more inefficaccy of the compounds, the prediction could match the experimental data better. 
+
+Plot the distance between the cell lines:
+```{r}
+score <- score[-which(score$n < 600),]
+X <- as.matrix(score$score)
+rownames(X) <- score$master_ccl_id
+d <- dist(X)
+heatmap(as.matrix(d))
+```
+
+In conclusion, the assessment of the prediction model derived from zebra fish data on cancer cell data does not has good feasibility because the prediction model only predicted very small portion of the compounds in the cancer cell data set to be effective. This could be due to that the compounds that are studied in the cancer cells are not detrimental to the zebra fish (cancer cells are a completely different species from zebra fish anyway). The other reason could be the model was established on thousands of compounds but the cancer cell data only has < 500 compounds to work with. In addition,  the prediction of compounds' efficacy on cancer cells was using a relatively smaller number of features for simplicity, that could have reduced the prediction accuracy.
+
+In fact, even if the predicted efficacy data showed good balance between positive and negative values, the model could just not work on the cancer cells. From biology understanding, zebra fish and cancer cells are too different from each other in terms of phenotypes and tolerance to the compounds. There is a high chance that the phenomena observed from zebra fish won't translate to mammalian cell lines.
+
+However, one drawback of the current project is that we are only looking at life/death of the cancer cells. There could be other phenotypes of the cells that were able to be predicted using the zebra fish model. Given the short amound of time for the project, we did not have a chance to evaluate other possibilities but this could something to explore further into.
