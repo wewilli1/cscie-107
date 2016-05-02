@@ -325,11 +325,14 @@ process_models <- function(train_test_list){
 #
 ###############################################################################
 get_auc_results <- function(model_results_list){
-  auc_results <- lapply(model_results_list$rf, function(i){
+  auc_scores <- lapply(model_results_list$rf, function(i){
     i[["auc_score"]]
   })
-  auc_results <- unlist(auc_results)
-  return(auc_results)
+  auc_scores <- unlist(auc_scores)
+  auc_scores_df <- 
+    data.frame(phenotype = names(auc_scores), auc_scores = auc_scores)
+  rownames(auc_scores_df) <- NULL
+  return(auc_scores_df)
 }
 
 ###############################################################################
