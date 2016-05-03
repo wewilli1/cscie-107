@@ -349,7 +349,8 @@ get_roc_results <- function(model_results_list){
   roc_results <- lapply(model_results_list$rf, function(i){
    i[["train_predict"]]
   })
-  roc_results <- unlist(roc_results)
+  
+  # return the ROC list to the caller
   return(roc_results)
 }
 
