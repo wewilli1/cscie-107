@@ -1,5 +1,4 @@
 ---
-title: "drug-screening"
 output: html_document
 ---
 
@@ -7,9 +6,7 @@ output: html_document
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
-## R Markdown
-
-```{r}
+```{r, echo=FALSE, message=FALSE}
 library(ROCR)
 library(readr)
 library(knitr)
@@ -17,10 +14,14 @@ library(knitr)
 # load data files
 load("auc_scores.Rdata")
 load("roc_results.Rdata")
+```
 
+```{r, echo=FALSE, message=FALSE}
 # create an AUC score table
-kable(auc_scores)
+kable(auc_scores, caption = "AUC Scores For Each Phenotype")
+```
 
+```{r, echo=FALSE, message=FALSE}
 # plot combined ROC curves for death phenotypes
 p2_roc <- performance(prediction.obj = roc_results$P2, 
                       measure = "tpr", x.measure = "fpr")
@@ -49,7 +50,9 @@ legend('bottomright', c("P2", "P7", "P8", "P11", "P12", "P13", "P14"),
        lty = c(1, 1, 1, 1, 1, 1, 1), 
        lwd = c(2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5),
        col = c("red", "blue", "green", "black", "purple", "yellow", "brown"))
+```
 
+```{r, echo=FALSE, message=FALSE}
 # precision recall plot for death phenotypes
 p2_pr <- performance(prediction.obj = roc_results$P2, 
                       measure = "prec", x.measure = "rec")
@@ -77,6 +80,39 @@ legend('bottomright', c("P2", "P7", "P8", "P11", "P12", "P13", "P14"),
        lty = c(1, 1, 1, 1, 1, 1, 1), 
        lwd = c(2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5),
        col = c("red", "blue", "green", "black", "purple", "yellow", "brown"))
-
 ```
 
+# Software Description  
+
+## Table of Files Describing Each File In the Repository
+```{r}
+# create file name descriptions
+auc_scores_desc <- 
+  "R data file containing AUC Scores for each phenotype in the training data set"
+CTRPv2_desc <- "Cancer drug independent test set"
+drug_screening_R_desc <- "R application that performs machine learning analysis"
+drug_screening_Rmd_desc <- "R markdown file which presents analysis and results"
+predictions_desc <- "Independent test set prediction data"
+roc_results_desc <- "R data file containing test data ROC prediction objects"
+yactives_train_desc <- "Training data set"
+
+files_df <- data.frame(File = c("auc_scores.Rdata", "CTRPv2_test_set.csv",
+                                 "drug_screening.R", "drug-screening.Rmd",
+                                 "predictions.csv", "roc_results.Rdata",
+                                 "yactives_training_set_2.csv"),
+                       Description = c(auc_scores_desc, CTRPv2_desc,
+                                       drug_screening_R_desc, 
+                                       drug_screening_Rmd_desc,
+                                       predictions_desc,
+                                       roc_results_desc,
+                                       yactives_train_desc))
+
+kable(files_df)
+```
+
+## The Main Application: drug_screening.R
+The drug-screening.R file contains the main R application that performs the machine learning analysis and saves data for analysis.  We chose to use a .R file as opposed to a .Rmd file because the RStudio debugger is much easier to use in a .R application than in a .Rmd file.  The drug-screening.R application first reads the yactives_training_set_2.csv training set data and the CTRPv2_test_set.csv independent test set data.  Training and test data sets are created, and then each machine learning model is processed.  
+
+The application was written such that it's very easy to add new machine learning models.  However, given the short duration of the project, the Random Forest model is currently the only model we have working.  Each model can be enabled or disabled individually using Boolean flags.  For example, the "knn_enabled" flag is set to false to disable the KNN model.  In addition, there is a "small_yactives_test_data_enabled" flag which is used to select a single phenotype which cuts the total runtime from approximately 4 hours to 20 minutes.  
+
+The drug-screening.R application saves 4 files for analysis: model_results_list.Rdata, auc_scores.Rdata, roc_results.Rdata, and predictions.csv.  The model_results_list.Rdata file is a list containing all the model results.  We did not include this file in our repository because it is approximately 371 mega-bytes in size and was too big to commit to the repository.  The 3 file descriptions that follow were created by extracting important data from model_results_list.Rdata and were small enough to commit to the repository.  The auc_scores.Rdata file contains ROC AUC scores for each phenotype class.  The roc_results.Rdata file contains ROC objects which can be used to plot ROC and precision recall curves for each phenotype class.  The predictions.csv contains the final random forest model predictions for the independent test set and was used to predict efficacy on cancer cells.
