@@ -354,6 +354,40 @@ get_roc_results <- function(model_results_list){
 }
 
 ###############################################################################
+# Function Name: get_indep_predictions
+# Description: Helper function which extracts the independent data set 
+#              predictions from the model results.
+# Inputs: 
+#   model_results_list: The master model results list.
+#   drug_ids: A vector containing the independent set drug IDs
+#
+# Returns a data frame containing the independent data set predictions.
+#
+###############################################################################
+get_indep_predictions <- function(model_results_list, drug_ids){
+  # get a list of prediction objects
+  indep_predictions <- lapply(model_results_list$rf, function(i){
+    i[["indep_predict"]]
+  })
+  
+  # convert the prediction object list to a list of data frames.
+  indep_predictions_list <- lapply(indep_predictions, function(i){
+    data.frame(unlist(i))
+  })
+  
+  # convert the list of data frames to a single data frame.
+  indep_predictions_df <- data.frame(indep_predictions_list)
+  
+  # add the drug ID column to the data frame.
+  indep_predictions_df <- indep_predictions_df %>%
+    mutate(ID = drug_ids) %>%
+    select(ID, everything())
+  
+  # return the data frame to the caller.
+  return(indep_predictions_df)
+}
+
+###############################################################################
 # main program starts here
 ###############################################################################
 # use the following variables to enable and disable specific models.
@@ -386,6 +420,7 @@ train_test_list <-
 # P3 ROC object as follows: model_results_list$rf$P3$roc
 model_results_list <- process_models(train_test_list)
 
+############### Save the results #####################
 # save the master model_results_list to a file
 save(model_results_list, file = "model_results_list.Rdata")
 
@@ -398,3 +433,8 @@ save(auc_scores, file = "auc_scores.Rdata")
 # and save the results to a file.
 roc_results <- get_roc_results(model_results_list)
 save(roc_results, file = "roc_results.Rdata")
+
+# extract the independent test set predictions and save to a csv file
+indep_predictions_df <- 
+  get_indep_predictions(model_results_list, yactives_indep$ID)
+write.csv(indep_predictions_df, file = "predictions.csv")
