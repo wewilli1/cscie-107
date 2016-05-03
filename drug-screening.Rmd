@@ -4,7 +4,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 ```
 
 ## R Markdown
@@ -12,81 +12,71 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(ROCR)
 library(readr)
+library(knitr)
 
-load("model_results_list_1.R")
+# load data files
+load("auc_scores.Rdata")
+load("roc_results.Rdata")
 
-# create a csv file for independent predictions
-p1_predict <- data.frame(model_results_list_1$rf$P1$indep_predict)
-p1_predict <- mutate(p1_predict, ID = yactives_indep$ID)
-p1_predict <- select(p1_predict, ID, false, true)
-colnames(p1_predict) <- c("ID", "p1_false", "p1_true")
+# create an AUC score table
+kable(auc_scores)
 
-
-p2_predict <- model_results_list_1$rf$P2$indep_predict
-colnames(p2_predict) <- c("p2_false", "p2_true")
-
-p3_predict <- model_results_list_1$rf$P3$indep_predict
-colnames(p3_predict) <- c("p3_false", "p3_true")
-
-p4_predict <- model_results_list_1$rf$P4$indep_predict
-colnames(p4_predict) <- c("p4_false", "p4_true")
-
-p5_predict <- model_results_list_1$rf$P5$indep_predict
-colnames(p5_predict) <- c("p5_false", "p5_true")
-
-p6_predict <- model_results_list_1$rf$P6$indep_predict
-colnames(p6_predict) <- c("p6_false", "p6_true")
-
-p7_predict <- model_results_list_1$rf$P7$indep_predict
-colnames(p7_predict) <- c("p7_false", "p7_true")
-
-p8_predict <- model_results_list_1$rf$P8$indep_predict
-colnames(p8_predict) <- c("p8_false", "p8_true")
-
-p9_predict <- model_results_list_1$rf$P9$indep_predict
-colnames(p9_predict) <- c("p9_false", "p9_true")
-
-p10_predict <- model_results_list_1$rf$P10$indep_predict
-colnames(p10_predict) <- c("p10_false", "p10_true")
-
-p11_predict <- model_results_list_1$rf$P11$indep_predict
-colnames(p11_predict) <- c("p11_false", "p11_true")
-
-p12_predict <- model_results_list_1$rf$P12$indep_predict
-colnames(p12_predict) <- c("p12_false", "p12_true")
-
-p13_predict <- model_results_list_1$rf$P13$indep_predict
-colnames(p13_predict) <- c("p13_false", "p13_true")
-
-p14_predict <- model_results_list_1$rf$P14$indep_predict
-colnames(p14_predict) <- c("p14_false", "p14_true")
-
-prediction_df <- cbind(p1_predict, p2_predict, p3_predict, p4_predict,
-                       p5_predict, p6_predict, p7_predict, p8_predict,
-                       p9_predict, p10_predict, p11_predict, p12_predict,
-                       p13_predict, p14_predict)
-
-write.csv(prediction_df, file = "predictions.csv")
-
-# print the ROC AUC results for KNN
-auc_results <- lapply(model_results_list_1$rf, function(i){
-  i$auc_score
-})
-auc_results
-
-# plot the ROC curve for the KNN model P7
-p7_roc <- performance(prediction.obj = model_results_list_1$rf$P7$train_predict, 
+# plot combined ROC curves for death phenotypes
+p2_roc <- performance(prediction.obj = roc_results$P2, 
                       measure = "tpr", x.measure = "fpr")
-plot(p7_roc)
-
-# add a 2nd curve to the same plot.
-p8_roc <- performance(prediction.obj = model_results_list_1$rf$P8$train_predict, 
+p7_roc <- performance(prediction.obj = roc_results$P7, 
                       measure = "tpr", x.measure = "fpr")
-plot(p8_roc, add = TRUE, col = "red")
+p8_roc <- performance(prediction.obj = roc_results$P8, 
+                      measure = "tpr", x.measure = "fpr")
+p11_roc <- performance(prediction.obj = roc_results$P11, 
+                      measure = "tpr", x.measure = "fpr")
+p12_roc <- performance(prediction.obj = roc_results$P12, 
+                      measure = "tpr", x.measure = "fpr")
+p13_roc <- performance(prediction.obj = roc_results$P13, 
+                      measure = "tpr", x.measure = "fpr")
+p14_roc <- performance(prediction.obj = roc_results$P14, 
+                      measure = "tpr", x.measure = "fpr")
 
-# precision recall example plot
-p7_p_r <- performance(prediction.obj = model_results_list_1$rf$P7$train_predict, 
+
+plot(p2_roc, col = "red", main = "ROC Curves For Death Indicator Phenotypes")
+plot(p7_roc, col = "blue", add = TRUE)
+plot(p8_roc, col = "green", add = TRUE)
+plot(p11_roc, col = "black", add = TRUE)
+plot(p12_roc, col = "purple", add = TRUE)
+plot(p13_roc, col = "yellow", add = TRUE)
+plot(p14_roc, col = "brown", add = TRUE)
+legend('bottomright', c("P2", "P7", "P8", "P11", "P12", "P13", "P14"),
+       lty = c(1, 1, 1, 1, 1, 1, 1), 
+       lwd = c(2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5),
+       col = c("red", "blue", "green", "black", "purple", "yellow", "brown"))
+
+# precision recall plot for death phenotypes
+p2_pr <- performance(prediction.obj = roc_results$P2, 
                       measure = "prec", x.measure = "rec")
-plot(p7_p_r)
+p7_pr <- performance(prediction.obj = roc_results$P7, 
+                      measure = "prec", x.measure = "rec")
+p8_pr <- performance(prediction.obj = roc_results$P8, 
+                      measure = "prec", x.measure = "rec")
+p11_pr <- performance(prediction.obj = roc_results$P11, 
+                      measure = "prec", x.measure = "rec")
+p12_pr <- performance(prediction.obj = roc_results$P12, 
+                      measure = "prec", x.measure = "rec")
+p13_pr <- performance(prediction.obj = roc_results$P13, 
+                      measure = "prec", x.measure = "rec")
+p14_pr <- performance(prediction.obj = roc_results$P14, 
+                      measure = "prec", x.measure = "rec")
+plot(p2_pr, col = "red", 
+     main = "Precision Recall Curves for Death Indicator Phenotypes")
+plot(p7_pr, col = "blue", add = TRUE)
+plot(p8_pr, col = "green", add = TRUE)
+plot(p11_pr, col = "black", add = TRUE)
+plot(p12_pr, col = "purple", add = TRUE)
+plot(p13_pr, col = "yellow", add = TRUE)
+plot(p14_pr, col = "brown", add = TRUE)
+legend('bottomright', c("P2", "P7", "P8", "P11", "P12", "P13", "P14"),
+       lty = c(1, 1, 1, 1, 1, 1, 1), 
+       lwd = c(2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5),
+       col = c("red", "blue", "green", "black", "purple", "yellow", "brown"))
+
 ```
 
