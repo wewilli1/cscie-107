@@ -6,13 +6,13 @@ output: html_document
 ---
 
 The machine learning model generated and verified using the zebra fish model is used to predict drug efficacy on cancer cells. Although multiple phenotypes of zebra fish were used to generate the model, to simplify the study, only life/death is assessed for the cancer cells. Efficacy of compounds in killing cancer cells was predicted, the the predicted data were evaluated by comparing to true experimental data showing efficacy, reflected by EC50, which is the amound of drug needed to kill half of the cells.
-        The "Predictions.csv" file summarised predicted probability of compounds being efficacious on causing several phenotypes of cancer cells and their impact on cancer cell viability. Because the majority of the probability numbers are very small (smaller than 0.5), to choose the best response to work with, number of positive indicators were compared among those phenotypes. We determined that p11_true, which is the probability of the compounds being able to kill cancer cells will be the predicted data to be compared with true experimental data. This will show whether the prediction model generated using the zebra fish model could be used on mammalian cells. 
+        The "Predictions.csv" file summarised predicted probability of compounds being efficacious on causing several phenotypes of cancer cells and their impact on cancer cell viability. Because the majority of the probability numbers are very small (smaller than 0.5), to choose the best response to work with, number of positive indicators were compared among those phenotypes. We determined that p11.true, which is the probability of the compounds being able to kill cancer cells will be the predicted data to be compared with true experimental data. This will show whether the prediction model generated using the zebra fish model could be used on mammalian cells. 
         The cancer cell viability data are downloaded from
 ftp://caftpd.nci.nih.gov/pub/dcc_ctd2/Broad/CTRPv2.0_2015_ctd2_ExpandedDataset/CTRPv2.0_2015_ctd2_ExpandedDataset.zip. The txt file: v20.data.curves_post_qc.txt has the EC50 values of each compounds used in this study (apparent_ec50_umol). The EC50 values are later converted to arbitrary efficacy values for each compound. The experiment id (experiment_id) column has the information that later was related to the cell lines. File v20.meta.per_experiment.txt has the cell line id (master_ccl_id) that are later joined to the data.  
         
 Read in and clean the viability data:
 ```{r}
-viability <- read.table('v20.data.curves_post_qc.txt', header = TRUE)
+viability <- read.table(gzfile('v20.data.curves_post_qc.gz'), header = TRUE)
 
 library(dplyr)
 viability_ec50 <- select(viability, experiment_id, apparent_ec50_umol, pred_pv_high_conc, master_cpd_id)
@@ -43,7 +43,7 @@ true[true < 0] <- 0
 true[true >1] <- 1
 
 ## calculate the correlation
-cor(true, accuracy$p11_true)
+cor(true, accuracy$p11.true)
 ```
 
 The value of correlation coefficient shows that there's no correlation between the predicted probability values and the converted EC50 values. 
@@ -51,7 +51,7 @@ The value of correlation coefficient shows that there's no correlation between t
         
 The prediction is further evaluated by comparing the distribution of the log 10 scaled EC50 values of compounds that have been predicted to show positive results to the distribution shown before for all EC50 values:
 ```{r}
-hist(log10(accuracy[which(accuracy$p11_true > 0.6),]$ec50), xlab = "log10_EC50 (umol)", ylab = "Frequency", main = "Distribution of EC50")
+hist(log10(accuracy[which(accuracy$p11.true > 0.6),]$ec50), xlab = "log10_EC50 (umol)", ylab = "Frequency", main = "Distribution of EC50")
 ```
 
 No big change in the distribution was observed.
@@ -64,7 +64,7 @@ efficacy[efficacy < -1] <- 1
 efficacy[efficacy != 1] <- 0
 
 ##threshold: p > 0.6 is efficacious
-p11 <- accuracy$p11_true > 0.6
+p11 <- accuracy$p11.true > 0.6
 
 ##percentage of predictions match true efficacy derived from EC50
 mean(efficacy == p11)
@@ -76,14 +76,14 @@ Next, we are trying to see whether the prediction performs differently on differ
 ```{r}
 ## cancer cell line
 cancer_cell <- read.table("v20.meta.per_experiment.txt", header = TRUE) %>% select(experiment_id, master_ccl_id)
-accuracy <- left_join(accuracy, cancer_cell, by = "experiment_id") %>% select(ID, p11_true, ec50, master_ccl_id)
+accuracy <- left_join(accuracy, cancer_cell, by = "experiment_id") %>% select(ID, p11.true, ec50, master_ccl_id)
 accuracy <- mutate(accuracy, Neg_log10_EC50 = -log10(ec50)) 
 accuracy <- accuracy[-which(accuracy$ec50 == 0),]
-corr <- accuracy %>% group_by(master_ccl_id) %>% summarise(cor(p11_true, Neg_log10_EC50))
+corr <- accuracy %>% group_by(master_ccl_id) %>% summarise(cor(p11.true, Neg_log10_EC50))
 colnames(corr) <- c("master_ccl_id", "corr")
 
 ##threshold
-accuracy1 <- mutate(accuracy, pred = p11_true > 0.6, true = Neg_log10_EC50 > 10)
+accuracy1 <- mutate(accuracy, pred = p11.true > 0.6, true = Neg_log10_EC50 > 10)
 accuracy1 <- mutate(accuracy1, v = (pred == true))
 score <- accuracy1 %>% group_by(master_ccl_id) %>% summarise(mean(v), n())
 colnames(score) <- c('master_ccl_id', 'score', 'n')
