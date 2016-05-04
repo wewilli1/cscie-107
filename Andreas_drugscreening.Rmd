@@ -1,0 +1,259 @@
+---
+title: "Andreas_drugscreening"
+author: "Andreas Werdich"
+date: "May 4, 2016"
+output: html_document
+fig_caption: yes
+---
+```{r eval = TRUE, echo = FALSE, message = FALSE}
+library(readr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(stringr)
+library(ggplot2)
+theme_set(theme_bw(base_size = 16))
+```
+
+
+#A machine learning approach to predict the toxic side effects of unknown drugs
+##Summary
+Phenotype-based screening of small molecules is the basis of modern drug discovery. However, hit rates from these screens are typically too low to permit identification of common chemical or structural themes among the identified compounds. Importantly, screening is done either in vitro using high-throughput phenotyping, or in model organisms that have either very limited relevance to vertebrate biology or are not amenable to automated phenotyping. Here, a small library of 4,182 bio reactive compounds was manually screened in live zebrafish recording over one thousand compound-phenotype associations spanning an array of 10 distinct developmental phenotypes. In this project we tested the hypothesis that a machine learning framework can predict phenotypes of unknown compounds based to their physical and structural properties. Furthermore, using independent screening data from human cancer cells we tested the idea that our model could help to predict the toxic side effects of unknown cancer drugs.If successful, this method will be suitable for prioritizing much larger libraries (e.g. consisting of millions of compounds) for specific phenotypic classes that are relevant to human physiology. 
+
+##Background and motivation
+Unexpected toxic side effects are a major problem in drug development. Historical data show that nearly 90% of drug withdrawal cases were caused by severe toxic effects, among which the majority were associated with cardiovascular symptoms. As an example, in 2004, rofecoxib (Vioxx), Merck’s blockbuster anti-inflammatory drug was removed from the market because of increased risk of heart attack and stroke. As another example, propulsid (Cisapride), an oral drug to treat gastroesophageal reflux disease (GERD), was associated with over 400 adverse cardiac events (arrhythmias) resulting in more than 80 deaths in the USA. It was removed from the US market in 2000. Other well-known drugs that were withdrawn due to toxic effects include the antihistamine terfenadine and the antibacterial grepafloxacin. Considering an average development cost of almost $1.8 billion and approximately 8.5 years of effort to bring a new drug to market, late-stage withdrawals mean significant losses to the pharmaceutical industry. The high cost of failure is also an important cause for the continuous decline in the number of new drugs that have entered the market over the past 10 years. Therefore, new methods are needed that can identify serious adverse effects during early stage of drug development. 
+
+##The zebrafish model for drug discovery
+Zebrafish have several properties that make them ideal for physiology-based screens: they are small, inexpensive to maintain and easily bred in large numbers - a single pair of adult zebrafish will generate 100-200 offspring per week. Embryos are only 1-4 mm long and can live for up to seven days in a single well of a standard 96- or 386-well plate supported by nutrients stored in the yolk sac. Administration of drugs is simple: zebrafish embryos absorb small molecules diluted in the surrounding water through their skin and gills. Highly hydrophobic compounds, large molecules and proteins can be injected into the yolk sac or the circulation. Compared to testing in other animal models, statistically significant numbers of zebrafish can be used for each assay and small amounts (~mg) of drugs are required. Importantly, zebrafish embryos are transparent for several days post fertilization which allows in vivo observation of organ function. Zebrafish embryos grow rapidly, with the basic body plan laid out within 24 hours post-fertilization (h.p.f.). Hatching occurs normally at 48 - 72 h.p.f., and the majority of organs, including the nervous system, cardiovascular system, intestines, liver, pancreas, kidneys, bone and sensory organs are differentiated and functional at 3-5 days post fertilization. The organs of zebrafish have been shown to be very close to their mammalian counterparts at the anatomical, physiological and molecular levels. Drug-screening assays based on the zebrafish model can streamline the drug development time-line, prioritize drug candidates for mammalian testing and reduce cost. At the same time, these assays provide a wealth of information directly related to the integrated physiology of an intact organism. Since phenotypes observed during zebrafish development can have immediate relevance to processes higher vertebrate, drugs identified in phenotype-driven screens translate well to mammalian systems. Additionally, because zebrafish are an outbred model, they allow testing of compounds across multiple genetic backgrounds. However, despite these advantages, small molecule screens in zebrafish typically identify one or a small number of relevant compounds, not observing any systematic relationships between chemical structure and toxicity, or specific phenotypic classes.
+
+##Data sets
+###*Training set*
+A data set for *training* and *cross-validation* was generated by observing the responses of developing zebrafish embryos to the bioactive small molecules in each well. In an effort  to associate a maximal number of chemical structures with consequent developmental phenotypes, we screened 4,182 bioactive small molecules. These compounds were selected as a subset of a commercial library consisting of over 900,000 compounds (ChemBridge corporation, CA) and used as the *training set* in this project. The *training set* compounds were selected due to their previously described activity in yeast, which suggested that they each had a target within the eucariotic cell, albeit an unknown one. After drug exposure, embryos were screened for a series of developmental phenotypes at 24 and 48 h.p.f. using standard light microscopy. At 24 h.p.f. a single observer examined each well for dead embryos or obvious developmental delay (Figure 1). Only those wells where at least two of the three embryos were dead or delayed were annotated as a hit for 24 hour death or delay/arrest, respectively. If any of the 16 control wells had a 24 h.p.f. death or delay/arrest phenotype, the plate was discarded. At 48 h.p.f., two independent observers screened the plates, examining for 8 additional phenotypes including embryo death, developmental delay, pigmentation defects, multiple cardiac defects, jaw defects, cyclopia. Only wells where at least two of the three embryos presented with the same phenotype were taken as a hit for this phenotype. 
+All phenotypes were screened as binary classes (hit / no hit) and labelled as P01, P02, .. , P10 in the data set.
+
+<center><img src='Screening.jpg' width='450' /></center>
+
+
+Screening for chemical modifiers of vertebrate development. Adult zebrafish lay hundreds of fertilized eggs each morning. Embryos are arrayed in assay 96-well plates and compounds from small molecule libraries are added to the water in each well. Embryos are allowed to develop and are screened visually for developmental defects. Examples of specific phenotypes include elongation of the notochord (A), absence of blood (B, untreated, upper; treated lower), and loss of a single otolith in the ear (C). 
+
+```{r eval = TRUE, echo = FALSE, message = FALSE}
+#Phenotypes in the data set
+raw <- read_csv('yactives_training_set_2.csv')
+#separate classes from features
+dat_c <- select(raw, P1:P10)
+names(dat_c) <- names(dat_c) %>% gsub('P','',.)
+dat_f <- select(raw, -(ID:P10))
+
+#sort class columns by hits
+class_pos <- dat_c %>%
+  summarize_each(funs(sum)) %>%
+  gather(key = Phenotype, value = hits, `1`:`10`) %>%
+  arrange(desc(hits))
+
+#re-arrange phenotype classes by hits
+dat_c <- select(dat_c, as.numeric(class_pos$Phenotype)) 
+
+#add correct title to the phenotype column
+class_pos <- class_pos  %>% 
+  mutate(Phenotype = paste('P', sprintf("%02.0f", as.numeric(Phenotype)), sep = '')) 
+
+#plot histogram of hits
+p <- ggplot(data = class_pos, 
+            aes(x = reorder(Phenotype, desc(hits)), y = hits, fill = Phenotype))
+p +
+  geom_bar(stat = 'identity') +
+  theme(legend.position = 'none' ) +
+  #theme(axis.ticks = element_blank(), axis.text.x = element_blank()) +
+  xlab('Phenotype') + ylab('Number of hits') + 
+  ggtitle('Phenopyte hits for all drugs')
+```
+
+Figure: Number of positive samples (hit) for the 10 observed zebrafish phenotypes P01, .. P10 in the *training set*.
+
+###Independent *Test set*
+In addition to the training set, we tested our algorithm using phenotypic data from a very different model system. We used publically available small moecule screening data from the [Broad Institute's](http://www.broadinstitute.org/) Cancer Therapeutics Response Portal [CTRP](http://www.broadinstitute.org/ctrp/). The data sets contain phenotypic information from 545 compounds tested on 860 different human cancer cell lines.  
+
+###*Compound selection and feature generation*
+Compounds were annotated by [SMILES](https://en.wikipedia.org/wiki/Simplified_molecular-input_line-entry_system) (Simplified Molecular Input Line Entry System) sequences, a molecular specification in form of a line notation for describing the structure of chemical species using short ASCII strings. SMILES strings were collected from the compound documentation files and converted into [Structure Data File (SDF)](https://en.wikipedia.org/wiki/Chemical_table_file) format which can be read by most chemical informatics programs using the open source software [Open Babel](http://openbabel.org/wiki/Main_Page). Further processing of the SDF files was done using the chemical tools *cxcalc* (to derive physical properties) and *generatemd* (to derive structural properties) from the compounds. These tools are components of the commercial chemical engineering software package [ChemAxon](https://www.chemaxon.com/) which required an academic license that we obtained from the manufacturer specifically for this class project. The physical properties were comprised of the number of rotatable bonds (RB), partition coefficient (logp), polar surface area (tPSA), number of hydrogen accaptors (Hacc), number of hydrogen donors (Hdon), and molecular weight (MW). To derive structural properties of the compounds, Extended-Connectivity Fingerprints [ECFPs](https://docs.chemaxon.com/display/docs/Chemical+Fingerprints+-+Home) were calculated using the ChemAxon software. These chemical descriptors are designed for molecular characterization, similarity searching, and structure-activity modeling. They are among the most popular similarity search tools in drug discovery and are effectively used in a wide variety of applications.
+
+```{r eval = TRUE, echo = FALSE, message = FALSE}
+
+#load the physical features of the training set
+trainset_phys <- read_tsv('trainset_phys.txt') %>% mutate(SET = 'Trainset')
+names(trainset_phys) <- c('ID', 'RB','logP','tPSA', 'Hacc', 'Hdon','MW', 'SET')
+
+#load chemical fingerprint for the training set
+trainset_ECFP <- read.table(
+  file = 'trainset_ECFP.txt',
+  header = FALSE, 
+  skip = 2,
+  sep = ' ',
+  fill = TRUE)
+names(trainset_ECFP) <- c('ID', 'ECFP')
+trainset_ECFP <- bind_cols(select(trainset_phys, ID), select(trainset_ECFP, -ID))
+
+#load the physical features of the test set
+testset_phys <- read_tsv('testset_phys.txt') %>% mutate(SET = 'Testset')
+names(testset_phys) <- names(trainset_phys)
+
+#load chemical fingerprint for the test set
+testset_ECFP <- read.table(
+  file = 'testset_ECFP.txt',
+  header = FALSE, 
+  skip = 2,
+  sep = ' ',
+  fill = TRUE)
+names(testset_ECFP) <- c('ID', 'ECFP')
+
+#load the ID column for the test set
+CTRP_compounds <- read_csv('v20.meta.per_compound.csv')
+testset_ID <- data.frame(ID = CTRP_compounds$master_cpd_id)
+testset_phys <- bind_cols(testset_ID, select(testset_phys, -ID)) 
+testset_ECFP <- bind_cols(testset_ID, select(testset_ECFP, -ID))
+
+#lets take a look at the same number of compounds from both sets
+train_sample <- sample_n(trainset_phys, size = nrow(testset_phys), replace = FALSE)
+dat <- bind_rows(testset_phys, train_sample)
+
+#lets look at mass dependent on partition coefficient 
+p <- ggplot(dat, aes(x = logP, y = MW, color = SET))
+p +
+  geom_point() +
+  scale_colour_manual(values = c("blue","red")) +
+  xlab('Partition coefficient (logP)') + ylab('Molecular weight (MW)') +
+  guides(color=guide_legend(title=NULL))
+  
+```
+
+Figure: comparison of the physical properties of the compounds in the two data sets. Compounds shown as *Trainset* were randomly selected from the 4,182 zebrafish training data. Compounds shown as *Testset* were taken from the inependent cancer data set. This figure shows that the chemical properties of the compounds in the two data sets are quite different.
+
+```{r eval = TRUE, echo = FALSE, message = FALSE}
+#Function to exctract all ECFPs from the long list of strings
+
+ECFP_list <- function(dataset) {
+  #Get a list of unique ECFPs in the training set
+  ECFP_char <- as.character(dataset$ECFP)
+  #enter all ECFPs into one giant list
+  ECFP <- as.numeric(str_split(ECFP_char[1], '\t')[[1]])
+  #remember the number of ECFPs for each row
+  ECFP_n <- length(ECFP)
+
+  #collect ECFPs for all subsequent rows in the data
+  for (i in 2:length(ECFP_char)) {
+    ECFP_new <- as.numeric(str_split(ECFP_char[i], '\t')[[1]])
+    ECFP <- append(ECFP, ECFP_new)
+    ECFP_n <- append(ECFP_n, length(ECFP_new))
+  }
+return(list(ECFP = ECFP, N = ECFP_n))
+}
+
+```
+
+
+```{r eval = TRUE, echo = FALSE, message = FALSE}
+#Extract all ECFPs from the training data set
+ECFP <- ECFP_list(trainset_ECFP)$ECFP
+
+#generate list of unique ECFPs in the training set
+ECFP_unique <- unique(ECFP) #all unique ECFPs
+ECFP_number <- length(ECFP_unique) #number of unique ECFPs
+ECFP_unique <- data.frame(ECFP = ECFP_unique) %>%
+  mutate(ID = seq(1, ECFP_number, 1))
+
+#find the unique ECFP IDs in the list of all ECFPs
+#WARNING: this can take a while on a slow computer
+ECFP_ID <- ECFP_unique$ID[which(ECFP_unique$ECFP %in% ECFP[1])]
+for (i in seq(2, length(ECFP))) {
+  ECFP_new <- ECFP_unique$ID[which(ECFP_unique$ECFP %in% ECFP[i])]
+  ECFP_ID <- append(ECFP_ID, ECFP_new)
+}
+
+ECFP_FP_train <- data.frame(ECFP, FP = ECFP_ID)
+
+#figure out the frequencies
+tab_train <- as.data.frame(table(ECFP_FP_train$FP)) %>%
+  arrange(desc(Freq)) %>% mutate(SET = 'Trainset') %>% mutate(NUM = seq(1, n(), 1))
+names(tab_train) <- c('ECFP_ID','Frequency', 'SET', 'NUM')
+
+```
+
+
+```{r eval = TRUE, echo = FALSE, message = FALSE}
+#Extract all ECFPs from the test data set
+ECFP <- ECFP_list(testset_ECFP)$ECFP
+
+found <- sum(ECFP_unique$ECFP %in% ECFP[1])
+#if the ECFP is found in the list, a number > 0 is returned
+ECFP_match <- ifelse(
+  found > 0, ECFP_unique$ID[which(ECFP_unique$ECFP %in% ECFP[1])], 0)
+
+#find the training ECFPs in the testset
+for (i in seq(2, length(ECFP), 1)){
+  #for each new ECFP, check if this one is in the list of trainins ECFPs
+  found <- sum(ECFP_unique$ECFP %in% ECFP[i])
+  #if the ECFP is found in the list, a number > 0 is returned
+  ECFP_match <- append(ECFP_match, ifelse(
+    found > 0, ECFP_unique$ID[which(ECFP_unique$ECFP %in% ECFP[i])], 0))
+}
+
+
+ECFP_FP_test <- data.frame(ECFP, FP = ECFP_match)
+
+#figure out the frequencies
+tab_test <- data.frame(table(ECFP_FP_test$FP)) %>%
+  arrange(desc(Freq)) %>% mutate(SET = 'Testset') %>% mutate(NUM = seq(1, n(), 1))
+names(tab_test) <- c('ECFP_ID','Frequency', 'SET', 'NUM')
+
+#add percent frequencies
+tab_test <- tab_test %>%
+  mutate(Frequency_rel = Frequency/nrow(ECFP_FP_test) * 100) %>%
+  mutate(ECFP_ID = as.numeric(as.character(ECFP_ID)))
+
+tab_train <- tab_train %>%
+  mutate(Frequency_rel = Frequency/nrow(ECFP_FP_train) * 100) %>%
+  mutate(ECFP_ID = as.numeric(as.character(ECFP_ID)))
+
+#combine the frequncy tables
+tab <- bind_rows(tab_train,tab_test)
+
+```
+
+
+```{r eval = TRUE, echo = FALSE, message = FALSE}
+#Plot frequencies of training ECFPs
+#filter the number of ECFPs shown
+tab_plot <- filter(tab, Frequency > 20 & ECFP_ID > 0)
+tab_plot$SET_2 = factor(tab_plot$SET, levels=c('Trainset','Testset'))
+
+p <- ggplot(data = tab_plot, aes(x = NUM, y = Frequency_rel))
+
+p +
+  geom_bar(stat = 'identity', color = 'red') +
+  ggtitle('ECFP frequencies in the zebrafish data sets') +
+  xlab('ECFP') + ylab('Frequency') +
+  facet_grid(.~ SET_2, scales = 'free_y')
+```
+
+Figure: comparison of the structural properties of the compounds in the two data sets represented by ECFPs. Each ECFP in the independent test set was matched with the corresponding feature in the trainig set to ensure that training and testing are done with the same set of features. A large number of unique ECFPs in the training set could be matched with the features in the testset, although the test set contained a significant number of ECFPs that could not be matched. This is consistent with the figure above suggesting that the compounds in the testset were very differerent from those in the training set.
+
+```{r}
+#get the number of matched ECFPs
+matched <- 
+  sum(filter(tab_test, ECFP_ID > 0)$Frequency)/sum(tab_test$Frequency) * 100
+unmatched <- 
+  sum(filter(tab_test, ECFP_ID == 0)$Frequency)/sum(tab_test$Frequency) * 100
+
+match <- data.frame(
+  Match = c(matched, unmatched), cat = as.factor(c('matched','unmatched')))
+
+#plot the ECFP match
+p <- ggplot(data = match, aes(x = cat, y = Match))
+
+p +
+  geom_bar(stat = 'identity', fill = 'red') +
+  ggtitle('Proportion of matched ECFPs') +
+  ylab('Frequency') + xlab('')
+
+```
+
+Figure: This graph shows the proportions of ECFPs in the test set that were successfully matched to the ECFPs in the training set. This data shows that almost 30% of the structural features in the test set are different from those in the trainig set which confirms that the compounds in the test set are very different from the compounds in the training set
