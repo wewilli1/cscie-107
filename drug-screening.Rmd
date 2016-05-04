@@ -10,16 +10,35 @@ knitr::opts_chunk$set(echo = FALSE)
 library(ROCR)
 library(readr)
 library(knitr)
+library(dplyr)
 
 # load data files
 load("auc_scores.Rdata")
 load("roc_results.Rdata")
 ```
 
+# ROC and Precision Recall Plots
+## AUC Summary
+The following table summarises the ROC AUC score for each phenotype prediction made by the random forest machine learning algorithm. The P2, P7, and P8 phenotypes are "death" indicators which inicate that the zebra fish died.  Death indicators P7 and P8 had the highest 2 AUC scores and P2 was 5th highest.
+
+#### ROC AUC Scores For Each Phenotype Sorted by AUC Score
 ```{r, echo=FALSE, message=FALSE}
 # create an AUC score table
-kable(auc_scores, caption = "AUC Scores For Each Phenotype")
+kable(arrange(auc_scores, desc(auc_scores)))
 ```
+
+Phenotypes P11, P12, P13, and P14 were created as a logical "OR" from permutations of P2, P7, and P8 death indicators.  These derived death indicators also had high AUC scores as compared to other phenotypes.  In summary, 7 of the top 8 AUC scores were death indicators.  P4 was the only indicator in the top 8 that was not a death indicator.  The following table summarises the derived death indicators.
+
+#### Derived Death Phenotype Indicator Table
+Derived Death Indicator Phenotype | Logical Operation
+----------------------------------|------------------
+P11                               | P2 OR P7 OR P8
+P12                               | P2 OR P7
+P13                               | P2 OR P8
+P14                               | P7 OR P8
+
+## ROC Curves
+The following plot shows the ROC curves for the death phenotypes.  The curves show that the random forest prediction model does a reasonable job of predicting the death indicators from chemical fingerprints in the training data.
 
 ```{r, echo=FALSE, message=FALSE}
 # plot combined ROC curves for death phenotypes
@@ -38,7 +57,6 @@ p13_roc <- performance(prediction.obj = roc_results$P13,
 p14_roc <- performance(prediction.obj = roc_results$P14, 
                       measure = "tpr", x.measure = "fpr")
 
-
 plot(p2_roc, col = "red", main = "ROC Curves For Death Indicator Phenotypes")
 plot(p7_roc, col = "blue", add = TRUE)
 plot(p8_roc, col = "green", add = TRUE)
@@ -51,6 +69,9 @@ legend('bottomright', c("P2", "P7", "P8", "P11", "P12", "P13", "P14"),
        lwd = c(2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5),
        col = c("red", "blue", "green", "black", "purple", "yellow", "brown"))
 ```
+
+## Precision Recall Curves
+The following curves show the precision recall curves for death indicator phenotypes.
 
 ```{r, echo=FALSE, message=FALSE}
 # precision recall plot for death phenotypes
@@ -76,7 +97,7 @@ plot(p11_pr, col = "black", add = TRUE)
 plot(p12_pr, col = "purple", add = TRUE)
 plot(p13_pr, col = "yellow", add = TRUE)
 plot(p14_pr, col = "brown", add = TRUE)
-legend('bottomright', c("P2", "P7", "P8", "P11", "P12", "P13", "P14"),
+legend('topright', c("P2", "P7", "P8", "P11", "P12", "P13", "P14"),
        lty = c(1, 1, 1, 1, 1, 1, 1), 
        lwd = c(2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5),
        col = c("red", "blue", "green", "black", "purple", "yellow", "brown"))
@@ -95,22 +116,28 @@ drug_screening_Rmd_desc <- "R markdown file which presents analysis and results"
 predictions_desc <- "Independent test set prediction data"
 roc_results_desc <- "R data file containing test data ROC prediction objects"
 yactives_train_desc <- "Training data set"
+v20.data_desc <- "Data downloaded from the Cancer Therapeutics Portal including compound IDs and their EC50 experimentation results with a variety of cancer cell lines. The predicted toxic effects of these compounds are summarized in predictions.csv"
+v20.meta_desc <- "Data downloaded from the Cancer Therapeutics Portal including cancer cell lines, which is joined to the EC50 data set"
 
 files_df <- data.frame(File = c("auc_scores.Rdata", "CTRPv2_test_set.csv",
-                                 "drug_screening.R", "drug-screening.Rmd",
-                                 "predictions.csv", "roc_results.Rdata",
-                                 "yactives_training_set_2.csv"),
+                                "drug_screening.R", "drug-screening.Rmd",
+                                "predictions.csv", "roc_results.Rdata",
+                                "yactives_training_set_2.csv", 
+                                "v20.data.curves_post_qc.gz",
+                                "v20.meta.per_experiment.txt"),
                        Description = c(auc_scores_desc, CTRPv2_desc,
                                        drug_screening_R_desc, 
                                        drug_screening_Rmd_desc,
                                        predictions_desc,
                                        roc_results_desc,
-                                       yactives_train_desc))
+                                       yactives_train_desc,
+                                       v20.data_desc,
+                                       v20.data_desc))
 
 kable(files_df)
 ```
 
-## The Main Application: drug_screening.R
+## The Machine Learning Application: drug_screening.R
 The drug-screening.R file contains the main R application that performs the machine learning analysis and saves data for analysis.  We chose to use a .R file as opposed to a .Rmd file because the RStudio debugger is much easier to use in a .R application than in a .Rmd file.  The drug-screening.R application first reads the yactives_training_set_2.csv training set data and the CTRPv2_test_set.csv independent test set data.  Training and test data sets are created, and then each machine learning model is processed.  
 
 The application was written such that it's very easy to add new machine learning models.  However, given the short duration of the project, the Random Forest model is currently the only model we have working.  Each model can be enabled or disabled individually using Boolean flags.  For example, the "knn_enabled" flag is set to false to disable the KNN model.  In addition, there is a "small_yactives_test_data_enabled" flag which is used to select a single phenotype which cuts the total runtime from approximately 4 hours to 20 minutes.  
