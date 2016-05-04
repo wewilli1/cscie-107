@@ -43,7 +43,7 @@ true[true < 0] <- 0
 true[true >1] <- 1
 
 ## calculate the correlation
-cor(true, accuracy$p11.true)
+cor(true, accuracy$P11.true)
 ```
 
 The value of correlation coefficient shows that there's no correlation between the predicted probability values and the converted EC50 values. 
@@ -51,7 +51,7 @@ The value of correlation coefficient shows that there's no correlation between t
         
 The prediction is further evaluated by comparing the distribution of the log 10 scaled EC50 values of compounds that have been predicted to show positive results to the distribution shown before for all EC50 values:
 ```{r}
-hist(log10(accuracy[which(accuracy$p11.true > 0.6),]$ec50), xlab = "log10_EC50 (umol)", ylab = "Frequency", main = "Distribution of EC50")
+hist(log10(accuracy[which(accuracy$P11.true > 0.6),]$ec50), xlab = "log10_EC50 (umol)", ylab = "Frequency", main = "Distribution of EC50")
 ```
 
 No big change in the distribution was observed.
@@ -64,7 +64,7 @@ efficacy[efficacy < -1] <- 1
 efficacy[efficacy != 1] <- 0
 
 ##threshold: p > 0.6 is efficacious
-p11 <- accuracy$p11.true > 0.6
+p11 <- accuracy$P11.true > 0.6
 
 ##percentage of predictions match true efficacy derived from EC50
 mean(efficacy == p11)
@@ -76,14 +76,14 @@ Next, we are trying to see whether the prediction performs differently on differ
 ```{r}
 ## cancer cell line
 cancer_cell <- read.table("v20.meta.per_experiment.txt", header = TRUE) %>% select(experiment_id, master_ccl_id)
-accuracy <- left_join(accuracy, cancer_cell, by = "experiment_id") %>% select(ID, p11.true, ec50, master_ccl_id)
+accuracy <- left_join(accuracy, cancer_cell, by = "experiment_id") %>% select(ID, P11.true, ec50, master_ccl_id)
 accuracy <- mutate(accuracy, Neg_log10_EC50 = -log10(ec50)) 
 accuracy <- accuracy[-which(accuracy$ec50 == 0),]
-corr <- accuracy %>% group_by(master_ccl_id) %>% summarise(cor(p11.true, Neg_log10_EC50))
+corr <- accuracy %>% group_by(master_ccl_id) %>% summarise(cor(P11.true, Neg_log10_EC50))
 colnames(corr) <- c("master_ccl_id", "corr")
 
 ##threshold
-accuracy1 <- mutate(accuracy, pred = p11.true > 0.6, true = Neg_log10_EC50 > 10)
+accuracy1 <- mutate(accuracy, pred = P11.true > 0.6, true = Neg_log10_EC50 > 10)
 accuracy1 <- mutate(accuracy1, v = (pred == true))
 score <- accuracy1 %>% group_by(master_ccl_id) %>% summarise(mean(v), n())
 colnames(score) <- c('master_ccl_id', 'score', 'n')
