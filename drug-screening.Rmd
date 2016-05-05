@@ -420,7 +420,8 @@ The machine learning model generated and verified using the zebra fish model is 
         The cancer cell viability data are downloaded from
 ftp://caftpd.nci.nih.gov/pub/dcc_ctd2/Broad/CTRPv2.0_2015_ctd2_ExpandedDataset/CTRPv2.0_2015_ctd2_ExpandedDataset.zip. The txt file: v20.data.curves_post_qc.txt has the EC50 values of each compound used in this study (apparent_ec50_umol). The EC50 values are later converted to arbitrary efficacy values for each compound. The experiment id (experiment_id) column has the information that later was related to the cell lines. File v20.meta.per_experiment.txt has the cell line id (master_ccl_id) that are later joined to the data.  
         
-Read in and clean the viability data. The data used is "v20.data.curves_post_qc.gz" which contains the information of the experiment, compounds ID and their EC50 values in micro molar.
+The viability data used is "v20.data.curves_post_qc.gz" which contains the information of the experiment, compounds ID and their EC50 values in micro molar. The data has been cleaned to select four columns that will be needed: experiment_id, ec50, pred_pv_high_conc and ID. Those columns contain information of experiments (which is related to cell lines later), compounds (used to merge with prediction data) and EC50 values of the compounds. 
+
 ```{r, echo=FALSE, message=FALSE}
 viability <- read.table(gzfile('v20.data.curves_post_qc.gz'), header = TRUE)
 
@@ -434,12 +435,13 @@ The prediction data of the efficacy of the compounds using the zebra fish model 
 predicted <- read.csv("predictions.csv") %>% select(-X)
 ```
 
-The viability data and the prediction are joined by the compound ID so that we can compare the predicted data and the experimental data.
+As mentioned before, the viability data and the prediction are joined by the compound ID so that we can compare the predicted data and the experimental data. A glimpse of the joined data is shown below:
 ```{r, echo=FALSE, message=FALSE}
-accuracy <- left_join(predicted, viability_ec50, by = 'ID')
+accuracy <- left_join(predicted, viability_ec50, by = 'ID') 
+accuracy %>% head(6)
 ```
 
-The distribution of EC50 in log10 scale is ploted. The majority of the numbers are around 0. The data has a wide range within plus minus 300. 
+The following plot shows the distribution of EC50 in log10 scale. The majority of the numbers are around 0. The data has a wide range within plus minus 300. 
 ```{r, echo=FALSE, message=FALSE}
 hist(log10(accuracy$ec50), xlab = "log10_EC50 (umol)", ylab = "Frequency", main = "Distribution of EC50")
 ```
