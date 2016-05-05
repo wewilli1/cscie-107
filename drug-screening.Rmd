@@ -1,6 +1,8 @@
 ---
 author: "Willard Williamson, Yan Gu and Andreas Werdich"
 output: html_document
+fig_width: 6
+fig_height: 6
 ---
 
 ```{r setup, include=FALSE}
@@ -25,24 +27,23 @@ load("roc_results.Rdata")
 #A machine learning approach to predict the toxic side effects of unknown drugs
 
 ##Summary
-Phenotype-based screening of small molecules is the basis of modern drug discovery. However, hit rates from these screens are typically too low to permit identification of common chemical or structural themes among the identified compounds. Importantly, screening is done either in vitro using high-throughput phenotyping, or in model organisms that have either very limited relevance to vertebrate biology or are not amenable to automated phenotyping. Here, a small library of 4,182 bio reactive compounds was manually screened in live zebrafish recording over one thousand compound-phenotype associations spanning an array of 10 distinct developmental phenotypes. In this project we tested the hypothesis that a machine learning framework can predict phenotypes of unknown compounds based to their physical and structural properties. Furthermore, using independent screening data from human cancer cells we tested the idea that our model could help to predict the toxic side effects of unknown cancer drugs.  If successful, this method will be suitable for prioritizing much larger libraries (e.g. consisting of millions of compounds) for specific phenotypic classes that are relevant to human physiology. 
+Phenotype-based screening of small molecules is the basis of modern drug discovery. However, hit rates from these screens are typically too low to permit identification of common chemical or structural themes among the identified compounds. Importantly, screening is done either in vitro using high-throughput phenotyping, or in model organisms that have either very limited relevance to vertebrate biology or are not amenable to automated phenotyping. Here, a small library of 4,182 bio reactive compounds was manually screened in live zebrafish recording over one thousand compound-phenotype associations spanning an array of 10 distinct developmental phenotypes. In this project we tested the hypothesis that a machine learning framework can predict phenotypes of unknown compounds based to their physical and structural properties. Furthermore, using independent screening data from human cancer cells we tested the idea that our model could help to predict the toxic side effects of unknown cancer drugs.  If successful, this method will be suitable for prioritizing much larger libraries (e.g. consisting of millions of compounds) for specific phenotypic classes that are relevant to human physiology.
 
 ##Background and motivation
-Unexpected toxic side effects are a major problem in drug development. Historical data show that nearly 90% of drug withdrawal cases were caused by severe toxic effects, among which the majority were associated with cardiovascular symptoms. As an example, in 2004, rofecoxib (Vioxx), Merck’s blockbuster anti-inflammatory drug was removed from the market because of increased risk of heart attack and stroke. As another example, propulsid (Cisapride), an oral drug to treat gastroesophageal reflux disease (GERD), was associated with over 400 adverse cardiac events (arrhythmias) resulting in more than 80 deaths in the USA. It was removed from the US market in 2000. Other well-known drugs that were withdrawn due to toxic effects include the antihistamine terfenadine and the antibacterial grepafloxacin. Considering an average development cost of almost $1.8 billion and approximately 8.5 years of effort to bring a new drug to market, late-stage withdrawals mean significant losses to the pharmaceutical industry. The high cost of failure is also an important cause for the continuous decline in the number of new drugs that have entered the market over the past 10 years. Therefore, new methods are needed that can identify serious adverse effects during early stage of drug development. 
+Unexpected toxic side effects are a major problem in drug development. Historical data show that nearly 90% of drug withdrawal cases were caused by severe toxic effects, among which the majority were associated with cardiovascular symptoms. As an example, in 2004, rofecoxib (Vioxx), Merck’s blockbuster anti-inflammatory drug was removed from the market because of increased risk of heart attack and stroke. As another example, propulsid (Cisapride), an oral drug to treat gastroesophageal reflux disease (GERD), was associated with over 400 adverse cardiac events (arrhythmias) resulting in more than 80 deaths in the USA. It was removed from the US market in 2000. Other well-known drugs that were withdrawn due to toxic effects include the antihistamine terfenadine and the antibacterial grepafloxacin. Considering an average development cost of almost $1.8 billion and approximately 8.5 years of effort to bring a new drug to market, late-stage withdrawals mean significant losses to the pharmaceutical industry. The high cost of failure is also an important cause for the continuous decline in the number of new drugs that have entered the market over the past 10 years. Therefore, new methods are needed that can identify serious adverse effects during early stage of drug development.
 
 ##The zebrafish model for drug discovery
-Zebrafish have several properties that make them ideal for physiology-based screens: they are small, inexpensive to maintain and easily bred in large numbers - a single pair of adult zebrafish will generate 100-200 offspring per week. Embryos are only 1-4 mm long and can live for up to seven days in a single well of a standard 96- or 386-well plate supported by nutrients stored in the yolk sac. Administration of drugs is simple: zebrafish embryos absorb small molecules diluted in the surrounding water through their skin and gills. Highly hydrophobic compounds, large molecules and proteins can be injected into the yolk sac or the circulation. Compared to testing in other animal models, statistically significant numbers of zebrafish can be used for each assay and small amounts (~mg) of drugs are required. Importantly, zebrafish embryos are transparent for several days post fertilization which allows in vivo observation of organ function. Zebrafish embryos grow rapidly, with the basic body plan laid out within 24 hours post-fertilization (h.p.f.). Hatching occurs normally at 48 - 72 h.p.f., and the majority of organs, including the nervous system, cardiovascular system, intestines, liver, pancreas, kidneys, bone and sensory organs are differentiated and functional at 3-5 days post fertilization. The organs of zebrafish have been shown to be very close to their mammalian counterparts at the anatomical, physiological and molecular levels. Drug-screening assays based on the zebrafish model can streamline the drug development time-line, prioritize drug candidates for mammalian testing and reduce cost. At the same time, these assays provide a wealth of information directly related to the integrated physiology of an intact organism. Since phenotypes observed during zebrafish development can have immediate relevance to processes higher vertebrate, drugs identified in phenotype-driven screens translate well to mammalian systems. Additionally, because zebrafish are an outbred model, they allow testing of compounds across multiple genetic backgrounds. However, despite these advantages, small molecule screens in zebrafish typically identify one or a small number of relevant compounds, not observing any systematic relationships between chemical structure and toxicity, or specific phenotypic classes.
+Zebrafish have several properties that make them ideal for physiology-based screens: they are small, inexpensive to maintain and easily bred in large numbers - a single pair of adult zebrafish will generate 100-200 offspring per week. Embryos are only 1-4 mm long and can live for up to seven days in a single well of a standard 96- or 386-well plate supported by nutrients stored in the yolk sac. Administration of drugs is simple: zebrafish embryos absorb small molecules diluted in the surrounding water through their skin and gills. Highly hydrophobic compounds, large molecules and proteins can be injected into the yolk sac or the circulation. Compared to testing in other animal models, statistically significant numbers of zebrafish can be used for each assay and small amounts (~mg) of drugs are required. Importantly, zebrafish embryos are transparent for several days post fertilization which allows in vivo observation of organ function. Zebrafish embryos grow rapidly, with the basic body plan laid out within 24 hours post-fertilization (h.p.f.). Hatching occurs normally at 48 - 72 h.p.f., and the majority of organs, including the nervous system, cardiovascular system, intestines, liver, pancreas, kidneys, bone and sensory organs are differentiated and functional at 3-5 days post fertilization. The organs of zebrafish have been shown to be very close to their mammalian counterparts at the anatomical, physiological and molecular levels. Drug-screening assays based on the zebrafish model can streamline the drug development time-line, prioritize drug candidates for mammalian testing and reduce cost. At the same time, these assays provide a wealth of information directly related to the integrated physiology of an intact organism. Since phenotypes observed during zebrafish development can have immediate relevance to processes in higher vertebrates, drugs identified in phenotype-driven screens translate well to mammalian systems. Additionally, because zebrafish are an outbred model, they allow testing of compounds across multiple genetic backgrounds. However, despite these advantages, small molecule screens in zebrafish typically identify one or a small number of relevant compounds, not observing any systematic relationships between chemical structure and toxicity, or specific phenotypic classes.
 
 ##Data sets
 ###*Training set*
-A data set for *training* and *cross-validation* was generated by observing the responses of developing zebrafish embryos to the bioactive small molecules in each well. In an effort  to associate a maximal number of chemical structures with consequent developmental phenotypes, we screened 4,182 bioactive small molecules. These compounds were selected as a subset of a commercial library consisting of over 900,000 compounds (ChemBridge corporation, CA) and used as the *training set* in this project. The *training set* compounds were selected due to their previously described activity in yeast, which suggested that they each had a target within the eucariotic cell, albeit an unknown one. After drug exposure, embryos were screened for a series of developmental phenotypes at 24 and 48 h.p.f. using standard light microscopy. At 24 h.p.f. a single observer examined each well for dead embryos or obvious developmental delay (see figure below). Only those wells where at least two of the three embryos were dead or delayed were annotated as a hit for 24 hour death or delay/arrest, respectively. If any of the 16 control wells had a 24 h.p.f. death or delay/arrest phenotype, the plate was discarded. At 48 h.p.f., two independent observers screened the plates, examining for 8 additional phenotypes including embryo death, developmental delay, pigmentation defects, multiple cardiac defects, jaw defects, cyclopia. Only wells where at least two of the three embryos presented with the same phenotype were taken as a hit for this phenotype. 
+A data set for *training* and *cross-validation* was generated by observing the responses of developing zebrafish embryos to the bioactive small molecules in each well. In an effort  to associate a maximal number of chemical structures with consequent developmental phenotypes, we screened 4,182 bioactive small molecules. These compounds were selected as a subset of a commercial library consisting of over 900,000 compounds (ChemBridge corporation, CA) and used as the *training set* in this project. The *training set* compounds were selected due to their previously described activity in yeast, which suggested that they each had a target within the eucaryotic cell, albeit an unknown one. After drug exposure, embryos were screened for a series of developmental phenotypes at 24 and 48 h.p.f. using standard light microscopy. At 24 h.p.f. a single observer examined each well for dead embryos or obvious developmental delay (see figure below). Only those wells where at least two of the three embryos were dead or delayed were annotated as a hit for 24 hour death or delay/arrest, respectively. If any of the 16 control wells had a 24 h.p.f. death or delay/arrest phenotype, the plate was discarded. At 48 h.p.f., two independent observers screened the plates, examining for 8 additional phenotypes including embryo death, developmental delay, pigmentation defects, multiple cardiac defects, jaw defects, cyclopia. Only wells where at least two of the three embryos presented with the same phenotype were taken as a hit for this phenotype.
 All phenotypes were screened as binary classes (hit / no hit) and labelled as P01, P02, .. , P10 in the data set.
 
 <center><img src='Screening.jpg' width='450' /></center>
 
-
 ##Screening for chemical modifiers of vertebrate development
-Adult zebrafish lay hundreds of fertilized eggs each morning. Embryos are arrayed in assay 96-well plates and compounds from small molecule libraries are added to the water in each well. Embryos are allowed to develop and are screened visually for developmental defects. Examples of specific phenotypes include elongation of the notochord (A), absence of blood (B, untreated, upper; treated lower), and loss of a single otolith in the ear (C). 
+Adult zebrafish lay hundreds of fertilized eggs each morning. Embryos are arrayed in assay 96-well plates and compounds from small molecule libraries are added to the water in each well. Embryos are allowed to develop and are screened visually for developmental defects. Examples of specific phenotypes include elongation of the notochord (A), absence of blood (B, untreated, upper; treated lower), and loss of a single otolith in the ear (C).
 
 
 ```{r eval = TRUE, echo = FALSE, message = FALSE}
@@ -60,27 +61,27 @@ class_pos <- dat_c %>%
   arrange(desc(hits))
 
 #re-arrange phenotype classes by hits
-dat_c <- select(dat_c, as.numeric(class_pos$Phenotype)) 
+dat_c <- select(dat_c, as.numeric(class_pos$Phenotype))
 
 #add correct title to the phenotype column
-class_pos <- class_pos  %>% 
-  mutate(Phenotype = paste('P', sprintf("%02.0f", as.numeric(Phenotype)), sep = '')) 
+class_pos <- class_pos  %>%
+  mutate(Phenotype = paste('P', sprintf("%02.0f", as.numeric(Phenotype)), sep = ''))
 
 #plot histogram of hits
-p <- ggplot(data = class_pos, 
+p <- ggplot(data = class_pos,
             aes(x = reorder(Phenotype, desc(hits)), y = hits, fill = Phenotype))
 p +
   geom_bar(stat = 'identity') +
   theme(legend.position = 'none' ) +
   #theme(axis.ticks = element_blank(), axis.text.x = element_blank()) +
-  xlab('Phenotype') + ylab('Number of hits') + 
+  xlab('Phenotype') + ylab('Number of hits') +
   ggtitle('Phenopyte hits for all drugs')
 ```
 
 Figure: Number of positive samples (hit) for the 10 observed zebrafish phenotypes P01, .. P10 in the *training set*.
 
 ###Independent *Test set*
-In addition to the training set, we tested our algorithm using phenotypic data from a very different model system. We used publicly available small moecule screening data from the [Broad Institute's](http://www.broadinstitute.org/) Cancer Therapeutics Response Portal [CTRP](http://www.broadinstitute.org/ctrp/). The data sets contain phenotypic information from 545 compounds tested on 860 different human cancer cell lines.  
+In addition to the training set, we tested our algorithm using phenotypic data from a very different model system. We used publicly available small moecule screening data from the [Broad Institute's](http://www.broadinstitute.org/) Cancer Therapeutics Response Portal [CTRP](http://www.broadinstitute.org/ctrp/). The data sets contain phenotypic information from 545 compounds tested on 860 different human cancer cell lines.
 
 ###*Compound selection and feature generation*
 Compounds were annotated by [SMILES](https://en.wikipedia.org/wiki/Simplified_molecular-input_line-entry_system) (Simplified Molecular Input Line Entry System) sequences, a molecular specification in the form of a line notation for describing the structure of chemical species using short ASCII strings. SMILES strings were collected from the compound documentation files and converted into [Structure Data File (SDF)](https://en.wikipedia.org/wiki/Chemical_table_file) format which can be read by most chemical informatics programs using the open source software [Open Babel](http://openbabel.org/wiki/Main_Page). Further processing of the SDF files was done using the chemical tools *cxcalc* (to derive physical properties) and *generatemd* (to derive structural properties) from the compounds. These tools are components of the commercial chemical engineering software package [ChemAxon](https://www.chemaxon.com/) which required an academic license that we obtained from the manufacturer specifically for this class project. The physical properties were comprised of the number of rotatable bonds (RB), partition coefficient (logp), polar surface area (tPSA), number of hydrogen accaptors (Hacc), number of hydrogen donors (Hdon), and molecular weight (MW). To derive structural properties of the compounds, Extended-Connectivity Fingerprints [ECFPs](https://docs.chemaxon.com/display/docs/Chemical+Fingerprints+-+Home) were calculated using the ChemAxon software. These chemical descriptors are designed for molecular characterization, similarity searching, and structure-activity modeling. They are among the most popular similarity search tools in drug discovery and are effectively used in a wide variety of applications.
@@ -94,7 +95,7 @@ names(trainset_phys) <- c('ID', 'RB','logP','tPSA', 'Hacc', 'Hdon','MW', 'SET')
 #load chemical fingerprint for the training set
 trainset_ECFP <- read.table(
   file = 'trainset_ECFP.txt',
-  header = FALSE, 
+  header = FALSE,
   skip = 2,
   sep = ' ',
   fill = TRUE)
@@ -108,7 +109,7 @@ names(testset_phys) <- names(trainset_phys)
 #load chemical fingerprint for the test set
 testset_ECFP <- read.table(
   file = 'testset_ECFP.txt',
-  header = FALSE, 
+  header = FALSE,
   skip = 2,
   sep = ' ',
   fill = TRUE)
@@ -117,21 +118,21 @@ names(testset_ECFP) <- c('ID', 'ECFP')
 #load the ID column for the test set
 CTRP_compounds <- read_csv('v20.meta.per_compound.csv')
 testset_ID <- data.frame(ID = CTRP_compounds$master_cpd_id)
-testset_phys <- bind_cols(testset_ID, select(testset_phys, -ID)) 
+testset_phys <- bind_cols(testset_ID, select(testset_phys, -ID))
 testset_ECFP <- bind_cols(testset_ID, select(testset_ECFP, -ID))
 
 #lets take a look at the same number of compounds from both sets
 train_sample <- sample_n(trainset_phys, size = nrow(testset_phys), replace = FALSE)
 dat <- bind_rows(testset_phys, train_sample)
 
-#lets look at mass dependent on partition coefficient 
+#lets look at mass dependent on partition coefficient
 p <- ggplot(dat, aes(x = logP, y = MW, color = SET))
 p +
   geom_point() +
   scale_colour_manual(values = c("blue","red")) +
   xlab('Partition coefficient (logP)') + ylab('Molecular weight (MW)') +
   guides(color=guide_legend(title=NULL))
-  
+
 ```
 
 Figure: Comparison of the physical properties of the compounds in the two data sets. Compounds shown as *Trainset* were randomly selected from the 4,182 zebrafish training data. Compounds shown as *Testset* were taken from the inependent cancer data set. This figure shows that the chemical properties of the compounds in the two data sets are quite different.
@@ -191,6 +192,10 @@ names(tab_train) <- c('ECFP_ID','Frequency', 'SET', 'NUM')
 #Extract all ECFPs from the test data set
 ECFP <- ECFP_list(testset_ECFP)$ECFP
 
+#generate list of unique ECFPs in the test set
+ECFP_unique_t <- unique(ECFP) #all unique ECFPs
+ECFP_number_t <- length(ECFP_unique_t) #number of unique ECFPs
+
 found <- sum(ECFP_unique$ECFP %in% ECFP[1])
 #if the ECFP is found in the list, a number > 0 is returned
 ECFP_match <- ifelse(
@@ -245,32 +250,52 @@ p +
 
 Figure: Comparison of the structural properties of the compounds in the two data sets represented by ECFPs. Each ECFP in the independent test set was matched with the corresponding feature in the trainig set to ensure that training and testing are done with the same set of features. A large number of unique ECFPs in the training set could be matched with the features in the testset, although the test set contained a significant number of ECFPs that could not be matched. This is consistent with the figure above suggesting that the compounds in the testset were very differerent from those in the training set.
 
-```{r}
+```{r, eval = TRUE, echo=FALSE, message=FALSE}
 #get the number of matched ECFPs
-matched <- 
+matched <-
   sum(filter(tab_test, ECFP_ID > 0)$Frequency)/sum(tab_test$Frequency) * 100
-unmatched <- 
+unmatched <-
   sum(filter(tab_test, ECFP_ID == 0)$Frequency)/sum(tab_test$Frequency) * 100
 
 match <- data.frame(
-  Match = c(matched, unmatched), cat = as.factor(c('matched','unmatched')))
+  value = c(matched, unmatched), cat = c('matched','unmatched')) %>%
+  mutate(cat = as.character(cat))
 
-#plot the ECFP match
-p <- ggplot(data = match, aes(x = cat, y = Match))
+#add unique ECFPs
+ec <- data.frame(
+  value = c(ECFP_number/1000, ECFP_number_t/1000), cat = as.character(c('trainset','testset')))
+match <- bind_rows(match, ec) %>%
+  mutate(fig = as.character(c('Testset','Testset',
+                              'Features','Features'))) %>%
+  mutate(cat = as.factor(cat))
+
+
+p <- ggplot(data = filter(match, fig == 'Features'), aes(x = cat, y = value))
 
 p +
-  geom_bar(stat = 'identity', fill = 'red') +
-  ggtitle('Proportion of matched ECFPs') +
-  ylab('Frequency') + xlab('')
+  geom_bar(stat = 'identity', fill = 'blue') +
+  ylab('Total number of unique ECFPs [10^3]') +
+  xlab('')
 
 ```
 
-Figure: This graph shows the proportions of ECFPs in the test set that were successfully matched to the ECFPs in the training set. This data shows that almost 30% of the structural features in the test set are different from those in the trainig set which confirms that the compounds in the test set are very different from the compounds in the training set
+Figure: Total number of unique ECFPs (x 1000) in the test set (left) and in the training set (right). While the number of unique structural features was comparable in both data sets, about 30% of features in the test set did not appear in he training set (see figure below).
+
+```{r, echo=FALSE, message=FALSE}
+p <- ggplot(data = filter(match, fig == 'Testset'), aes(x = cat, y = value))
+
+p +
+  geom_bar(stat = 'identity', fill = 'blue') +
+  ylab('% ECFPs in testset') +
+  xlab('')
+```
+
+Figure: This graph shows the proportion of ECFPs in the test set that were successfully matched to the ECFPs in the training set. Almost 30% of the structural features in the test set were different from those in the trainig set suggesting significant differences in the molecular strucures between the compounds of the two data sets.
 
 ##Results from the machine learning application
 ###ROC and Precision Recall Plots
 ###*AUC Summary*
-The following table summarises the ROC AUC score for each phenotype prediction made by the random forest machine learning algorithm. The P2, P7, and P8 phenotypes are "death" indicators which inicate that the zebra fish died.  Death indicators P7 and P8 had the highest 2 AUC scores and P2 was 5th highest.
+The following table summarises the ROC AUC score for each phenotype prediction made by the random forest machine learning algorithm. The P2, P7, and P8 phenotypes are "death" indicators which inicate that the zebrafish embryo died.  Death indicators P7 and P8 had the highest 2 AUC scores and P2 was 5th highest.
 
 ###*ROC AUC Scores For Each Phenotype Sorted by AUC Score*
 ```{r, echo=FALSE, message=FALSE}
@@ -293,19 +318,19 @@ The following plot shows the ROC curves for the death phenotypes.  The curves sh
 
 ```{r, echo=FALSE, message=FALSE}
 # plot combined ROC curves for death phenotypes
-p2_roc <- performance(prediction.obj = roc_results$P2, 
+p2_roc <- performance(prediction.obj = roc_results$P2,
                       measure = "tpr", x.measure = "fpr")
-p7_roc <- performance(prediction.obj = roc_results$P7, 
+p7_roc <- performance(prediction.obj = roc_results$P7,
                       measure = "tpr", x.measure = "fpr")
-p8_roc <- performance(prediction.obj = roc_results$P8, 
+p8_roc <- performance(prediction.obj = roc_results$P8,
                       measure = "tpr", x.measure = "fpr")
-p11_roc <- performance(prediction.obj = roc_results$P11, 
+p11_roc <- performance(prediction.obj = roc_results$P11,
                       measure = "tpr", x.measure = "fpr")
-p12_roc <- performance(prediction.obj = roc_results$P12, 
+p12_roc <- performance(prediction.obj = roc_results$P12,
                       measure = "tpr", x.measure = "fpr")
-p13_roc <- performance(prediction.obj = roc_results$P13, 
+p13_roc <- performance(prediction.obj = roc_results$P13,
                       measure = "tpr", x.measure = "fpr")
-p14_roc <- performance(prediction.obj = roc_results$P14, 
+p14_roc <- performance(prediction.obj = roc_results$P14,
                       measure = "tpr", x.measure = "fpr")
 
 plot(p2_roc, col = "red", main = "ROC Curves For Death Indicator Phenotypes")
@@ -316,7 +341,7 @@ plot(p12_roc, col = "purple", add = TRUE)
 plot(p13_roc, col = "yellow", add = TRUE)
 plot(p14_roc, col = "brown", add = TRUE)
 legend('bottomright', c("P2", "P7", "P8", "P11", "P12", "P13", "P14"),
-       lty = c(1, 1, 1, 1, 1, 1, 1), 
+       lty = c(1, 1, 1, 1, 1, 1, 1),
        lwd = c(2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5),
        col = c("red", "blue", "green", "black", "purple", "yellow", "brown"))
 ```
@@ -326,21 +351,21 @@ The following curves show the precision recall curves for death indicator phenot
 
 ```{r, echo=FALSE, message=FALSE}
 # precision recall plot for death phenotypes
-p2_pr <- performance(prediction.obj = roc_results$P2, 
+p2_pr <- performance(prediction.obj = roc_results$P2,
                       measure = "prec", x.measure = "rec")
-p7_pr <- performance(prediction.obj = roc_results$P7, 
+p7_pr <- performance(prediction.obj = roc_results$P7,
                       measure = "prec", x.measure = "rec")
-p8_pr <- performance(prediction.obj = roc_results$P8, 
+p8_pr <- performance(prediction.obj = roc_results$P8,
                       measure = "prec", x.measure = "rec")
-p11_pr <- performance(prediction.obj = roc_results$P11, 
+p11_pr <- performance(prediction.obj = roc_results$P11,
                       measure = "prec", x.measure = "rec")
-p12_pr <- performance(prediction.obj = roc_results$P12, 
+p12_pr <- performance(prediction.obj = roc_results$P12,
                       measure = "prec", x.measure = "rec")
-p13_pr <- performance(prediction.obj = roc_results$P13, 
+p13_pr <- performance(prediction.obj = roc_results$P13,
                       measure = "prec", x.measure = "rec")
-p14_pr <- performance(prediction.obj = roc_results$P14, 
+p14_pr <- performance(prediction.obj = roc_results$P14,
                       measure = "prec", x.measure = "rec")
-plot(p2_pr, col = "red", 
+plot(p2_pr, col = "red",
      main = "Precision Recall Curves for Death Indicator Phenotypes")
 plot(p7_pr, col = "blue", add = TRUE)
 plot(p8_pr, col = "green", add = TRUE)
@@ -349,17 +374,17 @@ plot(p12_pr, col = "purple", add = TRUE)
 plot(p13_pr, col = "yellow", add = TRUE)
 plot(p14_pr, col = "brown", add = TRUE)
 legend('topright', c("P2", "P7", "P8", "P11", "P12", "P13", "P14"),
-       lty = c(1, 1, 1, 1, 1, 1, 1), 
+       lty = c(1, 1, 1, 1, 1, 1, 1),
        lwd = c(2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5),
        col = c("red", "blue", "green", "black", "purple", "yellow", "brown"))
 ```
 
-# Software Description  
+# Software Description
 
 ## Table of Files Describing Each File In the Repository
 ```{r}
 # create file name descriptions
-auc_scores_desc <- 
+auc_scores_desc <-
   "R data file containing AUC Scores produced by the random forest model for each phenotype in the training data set"
 CTRPv2_test_set_desc <- "Cancer drug independent data set for the random forest model"
 drug_screening_R_desc <- "R application that performs machine learning analysis"
@@ -380,7 +405,7 @@ files_df <- data.frame(File = c("auc_scores.Rdata", "CTRPv2_test_set.csv",
                                 "drug-screening.R", "drug-screening.Rmd",
                                 "drug-screening.html",
                                 "predictions.csv", "roc_results.Rdata",
-                                "yactives_training_set_2.csv", 
+                                "yactives_training_set_2.csv",
                                 "v20.data.curves_post_qc.gz",
                                 "v20.meta.per_experiment.txt",
                                 "Screening.jpg",
@@ -389,7 +414,7 @@ files_df <- data.frame(File = c("auc_scores.Rdata", "CTRPv2_test_set.csv",
                                 "testset_phys.txt",
                                 "Testset_ECFP.txt"),
                        Description = c(auc_scores_desc, CTRPv2_test_set_desc,
-                                       drug_screening_R_desc, 
+                                       drug_screening_R_desc,
                                        drug_screening_Rmd_desc,
                                        drug_screening_html_desc,
                                        predictions_desc,
@@ -407,41 +432,40 @@ kable(files_df)
 ```
 
 ## The Machine Learning Application: drug_screening.R
-The drug-screening.R file contains the main R application that performs the machine learning analysis and saves data for analysis.  We chose to use a .R file as opposed to a .Rmd file because the RStudio debugger is much easier to use in a .R application than in a .Rmd file.  The drug-screening.R application reads the yactives_training_set_2.csv training set data and the CTRPv2_test_set.csv independent test set data.  Training and test data sets are created, and then each machine learning model is processed.  
+The drug-screening.R file contains the main R application that performs the machine learning analysis and saves data for analysis.  We chose to use a .R file as opposed to a .Rmd file because the RStudio debugger is much easier to use in a .R application than in a .Rmd file.  The drug-screening.R application reads the yactives_training_set_2.csv training set data and the CTRPv2_test_set.csv independent test set data.  Training and test data sets are created, and then each machine learning model is processed.
 
-The application was written such that it's very easy to add new machine learning models.  However, given the short duration of the project, the Random Forest model is currently the only model we have working.  Each model can be enabled or disabled individually using Boolean flags.  For example, the "knn_enabled" flag is set to false to disable the KNN model.  In addition, there is a "small_yactives_test_data_enabled" flag which is used to select a single phenotype which cuts the total runtime from approximately 4 hours to 20 minutes.  
+The application was written such that it is very easy to add new machine learning models.  However, given the short duration of the project, the Random Forest model is currently the only model we have working.  Each model can be enabled or disabled individually using Boolean flags.  For example, the "knn_enabled" flag is set to false to disable the KNN model.  In addition, there is a "small_yactives_test_data_enabled" flag which is used to select a single phenotype which cuts the total runtime from approximately 4 hours to 20 minutes.
 
 The drug-screening.R application saves 4 files for analysis: model_results_list.Rdata, auc_scores.Rdata, roc_results.Rdata, and predictions.csv.  The model_results_list.Rdata file is a list containing all the random forest model results.  We did not include this file in our repository because it is approximately 371 mega-bytes in size and was too big to commit to the repository.  The 3 files that follow were created by extracting data from the model_results_list.Rdata object.  The data extracted were saved to separate files that were small enough to commit to the repository.  The auc_scores.Rdata file contains ROC AUC scores for each phenotype class.  The roc_results.Rdata file contains ROC objects which can be used to plot ROC and precision recall curves for each phenotype class.  The predictions.csv file contains the final random forest model predictions for the independent test set and was used to predict compounds efficacy on cancer cells.
 
 ##Prediction of Compounds Efficacy on Cancer Cells
 
-The machine learning model generated and verified using the zebra fish model is used to predict drug efficacy on cancer cells. Although multiple phenotypes of zebra fish were used to generate the model, to simplify the study, only life/death is assessed for the cancer cells. Efficacy of compounds in killing cancer cells was predicted, the predicted data were evaluated by comparing to true experimental data showing efficacy, reflected by EC50, which is the amount of drug needed to kill half of the cells.
-        The "Predictions.csv" file summarised predicted probability of compounds being efficacious on causing several phenotypes of cancer cells and their impact on cancer cell viability. Because the majority of the probability numbers are very small (smaller than 0.5), to choose the best response to work with, the number of positive indicators were compared among those phenotypes. We determined that P11.true, which is the probability of the compounds being able to kill cancer cells, will be the predicted data to be compared with true experimental data. This will show whether the prediction model generated using the zebra fish model could be used on mammalian cells. 
+The machine learning model generated and verified using the zebrafish model is used to predict drug efficacy on cancer cells. Although multiple phenotypes of zebra fish were used to generate the model, to simplify the study, only life/death is assessed for the cancer cells. Efficacy of compounds in killing cancer cells was predicted, the predicted data were evaluated by comparing to true experimental data showing efficacy, reflected by EC50, which is the amount of drug needed to kill half of the cells.
+        The "Predictions.csv" file summarised predicted probability of compounds being efficacious on causing several phenotypes of cancer cells and their impact on cancer cell viability. Because the majority of the probability numbers are very small (smaller than 0.5), to choose the best response to work with, the number of positive indicators were compared among those phenotypes. We determined that P11.true, which is the probability of the compounds being able to kill cancer cells, will be the predicted data to be compared with true experimental data. This will show whether the prediction model generated using the zebra fish model could be used on mammalian cells.
         The cancer cell viability data are downloaded from
-ftp://caftpd.nci.nih.gov/pub/dcc_ctd2/Broad/CTRPv2.0_2015_ctd2_ExpandedDataset/CTRPv2.0_2015_ctd2_ExpandedDataset.zip. The txt file: v20.data.curves_post_qc.txt has the EC50 values of each compound used in this study (apparent_ec50_umol). The EC50 values are later converted to arbitrary efficacy values for each compound. The experiment id (experiment_id) column has the information that later was related to the cell lines. File v20.meta.per_experiment.txt has the cell line id (master_ccl_id) that are later joined to the data.  
-        
-The viability data used is "v20.data.curves_post_qc.gz" which contains the information of the experiment, compounds ID and their EC50 values in micro molar. The data has been cleaned to select four columns that will be needed: experiment_id, ec50, pred_pv_high_conc and ID. Those columns contain information of experiments (which is related to cell lines later), compounds (used to merge with prediction data) and EC50 values of the compounds. 
+ftp://caftpd.nci.nih.gov/pub/dcc_ctd2/Broad/CTRPv2.0_2015_ctd2_ExpandedDataset/CTRPv2.0_2015_ctd2_ExpandedDataset.zip. The txt file: v20.data.curves_post_qc.txt has the EC50 values of each compounds used in this study (apparent_ec50_umol). The EC50 values are later converted to arbitrary efficacy values for each compound. The experiment id (experiment_id) column has the information that later was related to the cell lines. File v20.meta.per_experiment.txt has the cell line id (master_ccl_id) that are later joined to the data.
+
+The viability data used is "v20.data.curves_post_qc.gz" which contains the information of the experiment, compounds ID and their EC50 values in micro molar. The data has been cleaned to select four columns that will be needed: experiment_id, ec50, pred_pv_high_conc and ID. Those columns contain information of experiments (which is related to cell lines later), compounds (used to merge with prediction data) and EC50 values of the compounds.
 
 ```{r, echo=FALSE, message=FALSE}
 viability <- read.table(gzfile('v20.data.curves_post_qc.gz'), header = TRUE)
 
-library(dplyr)
 viability_ec50 <- select(viability, experiment_id, apparent_ec50_umol, pred_pv_high_conc, master_cpd_id)
 colnames(viability_ec50) <- c('experiment_id', 'ec50','pred_pv_high_conc', 'ID')
 ```
 
-The prediction data of the efficacy of the compounds using the zebra fish model is "predictions.csv", in which the efficacy of the drugs is reflected by probability values under column names "Px.true" where x is numbers 1-14 representing the prediction on different responses.
+The prediction data of the efficacy of the compounds using the zebrafish model is "predictions.csv", in which the efficacy of the drugs is reflected by probability values under column names "Px.true" where x is numbers 1-14 representing the prediction on different responses.
 ```{r, echo=FALSE, message=FALSE}
 predicted <- read.csv("predictions.csv") %>% select(-X)
 ```
 
 As mentioned before, the viability data and the prediction are joined by the compound ID so that we can compare the predicted data and the experimental data. A glimpse of the joined data is shown below:
 ```{r, echo=FALSE, message=FALSE}
-accuracy <- left_join(predicted, viability_ec50, by = 'ID') 
+accuracy <- left_join(predicted, viability_ec50, by = 'ID')
 accuracy %>% head(6)
 ```
 
-The following plot shows the distribution of EC50 in log10 scale. The majority of the numbers are around 0. The data has a wide range within plus minus 300. 
+The following plot shows the distribution of EC50 in log10 scale. The majority of the numbers are around 0. The data has a wide range within plus minus 300.
 ```{r, echo=FALSE, message=FALSE}
 hist(log10(accuracy$ec50), xlab = "log10_EC50 (umol)", ylab = "Frequency", main = "Distribution of EC50")
 ```
@@ -450,7 +474,7 @@ Correlation between predicted efficacy and measured efficacy reflected by conver
 ```{r, echo=FALSE, message=FALSE}
 true <- 1 - (log10(accuracy$ec50 + 10^(-30)) + 25)/50
 true[true < 0.3] <- 0.3
-true <- (true - 0.4)/0.6/0.8 
+true <- (true - 0.4)/0.6/0.8
 true[true < 0] <- 0
 true[true >1] <- 1
 
@@ -458,15 +482,15 @@ true[true >1] <- 1
 cor(true, accuracy$P11.true)
 ```
 
-The value of correlation coefficient shows that there's no correlation between the predicted probability values and the converted EC50 values. 
-        Indeed, if we take a look at the predicted value, only 5% of the total are positive predictions (P > 0.6), that has caused the evaluation of the predictions difficult and the result might not be representative. 
-        
+The value of correlation coefficient shows that there's no correlation between the predicted probability values and the converted EC50 values.
+        Indeed, if we take a look at the predicted value, only 5% of the total are positive predictions (P > 0.6), that has caused the evaluation of the predictions difficult and the result might not be representative.
+
 The prediction is further evaluated by comparing the distribution of the log 10 scaled EC50 values of compounds that have been predicted to show positive results to the distribution shown before for all EC50 values:
 ```{r, echo=FALSE, message=FALSE}
 hist(log10(accuracy[which(accuracy$P11.true > 0.6),]$ec50), xlab = "log10_EC50 (umol)", ylab = "Frequency", main = "Distribution of EC50")
 ```
 
-No big change in the distribution was observed.This indicates the drugs that are predicted to be effective are not distinguished from the others regarding to their EC50 values. That means EC50 and the predicted efficacy might not be related. 
+No big change in the distribution was observed.This indicates the drugs that are predicted to be effective are not distinguished from the others regarding to their EC50 values. That means EC50 and the predicted efficacy might not be related.
 
 Now we are computing the percentage of predicted values that matches the true experimental data. Arbitrary threshold is set to differentiate efficacious compounds from others based on the EC50 (if log10EC50 is smaller than 0, the compound is efficacious). Similarly, for the prediction data, a threshold of 0.6 for probability is set. Probability above 0.6 means the compound is predicted to be efficacious. The percentage of predictions matching true efficacy derived from EC50 is computed:
 ```{r, echo=FALSE, message=FALSE}
@@ -489,7 +513,7 @@ Next, we are trying to see whether the prediction performs differently on differ
 ## cancer cell line
 cancer_cell <- read.table("v20.meta.per_experiment.txt", header = TRUE) %>% select(experiment_id, master_ccl_id)
 accuracy <- left_join(accuracy, cancer_cell, by = "experiment_id") %>% select(ID, P11.true, ec50, master_ccl_id)
-accuracy <- mutate(accuracy, Neg_log10_EC50 = -log10(ec50)) 
+accuracy <- mutate(accuracy, Neg_log10_EC50 = -log10(ec50))
 accuracy <- accuracy[-which(accuracy$ec50 == 0),]
 corr <- accuracy %>% group_by(master_ccl_id) %>% summarise(cor(P11.true, Neg_log10_EC50))
 colnames(corr) <- c("master_ccl_id", "corr")
@@ -511,7 +535,7 @@ p <- ggplot(score) + aes(x = master_ccl_id, y = score) + geom_point() + labs(tit
 p
 ```
 
-There are some variations in the prediction model's performance on predicting the compounds' efficacy on different cancer cell lines. However, again, this is not very representative since artifacts could be brought in when majority of the predictions are negative for the cancer cells. For example, when a cancer cell line has more predictions being false, then by tuning the threshold of EC50 and making the experimental data telling more inefficaccy of the compounds, the prediction could match the experimental data better. 
+There are some variations in the prediction model's performance on predicting the compounds' efficacy on different cancer cell lines. However, again, this is not very representative since artifacts could be brought in when majority of the predictions are negative for the cancer cells. For example, when a cancer cell line has more predictions being false, then by tuning the threshold of EC50 and making the experimental data telling more inefficaccy of the compounds, the prediction could match the experimental data better.
 
 Plot the distance between the cell lines:
 ```{r, echo=FALSE, message=FALSE}
@@ -521,10 +545,16 @@ rownames(X) <- score$master_ccl_id
 d <- dist(X)
 heatmap(as.matrix(d))
 ```
-Using the strategy for calculating the prediction score, some cell lines show similarity among each other regarding the prediction accuracy using the zebra fish model. 
+
+Using the strategy for calculating the prediction score, some cell lines show similarity among each other regarding the prediction accuracy using the zebra fish model.
 
 In conclusion, the assessment of the prediction model derived from zebra fish data on cancer cell data does not has good feasibility because the prediction model only predicted very small portion of the compounds in the cancer cell data set to be effective. This could be due to that the compounds that are studied in the cancer cells are not detrimental to the zebra fish (cancer cells are a completely different species from zebra fish anyway). The other reason could be the model was established on thousands of compounds but the cancer cell data only has < 500 compounds to work with. In addition,  the prediction of compounds' efficacy on cancer cells was using a relatively smaller number of features for simplicity, that could have reduced the prediction accuracy.
 
-In fact, even if the predicted efficacy data showed good balance between positive and negative values, the model could just not work on the cancer cells. From biology understanding, zebra fish and cancer cells are too different from each other in terms of phenotypes and tolerance to the compounds. There is a high chance that the phenomena observed from zebra fish won't translate to mammalian cell lines.
+In fact, even if the predicted efficacy data showed good balance between positive and negative values, the model could just not work on the cancer cells. From biology understanding, zebra fish and cancer cells are too different from each other in terms of phenotypes and tolerance to the compounds. There is a high chance that the phenomena observed from zebra fish won't translate well to mammalian cancer cell lines.
+
+However, one potential drawback of the current project is that we are only looking at life/death of the cancer cells. There could be other phenotypes of the cells that were able to be predicted using the zebra fish model. Given the short amound of time for the project, we did not have a chance to evaluate other possibilities but this could be something to explore further.
+
+##Conclusions:
+We established a machine learning framework to predict the physiological effects of an unknown drug on zebrafish embryo develpment. A data set consisting of more than 4,000 manual observations of 10 distinct physiological phenotypes was used to train a random forest classification algorithm. The achieved scores between 0.7 and 0.8 for some phenotypes suggest that the model may be used on much larger libraries with millions of compounds. We tested if our model could predict cell death in human cancer cells that were exposed to 545 different drugs. Physical and structural features were generated for these drugs and matched with the same features in the training set. Life/death predictions were then obtained from the random forest model. However, we found that the predicted outcomes did not compare well to the experimental result even when we varied the decision thresholds. There are several reasons why the zebrafish model failed to predict cell death on cancer cells. One important possibility is that the cancer compounds had physical and structural properties that were very distinct from those that were used for training the model. Expanding the training set to include more compounds with similar molecular features would most likely improve the accuracy of the model. Nevertheless, the results of the zebrafish model are encouraging. This model provides a resource of compound-activity associations in a vertebrate and demonstrates a means for combined in vivo/in silico screening with potentially immediate clinical relevance.
 
 However, one potential drawback of the current project is that we are only looking at life/death of the cancer cells. There could be other phenotypes of the cells that were able to be predicted using the zebra fish model. Given the short amound of time for the project, we did not have a chance to evaluate other possibilities but this could be something to explore further into.
