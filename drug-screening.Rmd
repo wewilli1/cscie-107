@@ -82,10 +82,10 @@ p +
 Figure: Number of positive samples (hit) for the 10 observed zebrafish phenotypes P01, .. P10 in the *training set*.
 
 ###Independent *Test set*
-In addition to the training set, we tested our algorithm using phenotypic data from a very different model system. We used publicly available small moecule screening data from the [Broad Institute's](http://www.broadinstitute.org/) Cancer Therapeutics Response Portal [CTRP](http://www.broadinstitute.org/ctrp/). The data sets contain phenotypic information from 545 compounds tested on 860 different human cancer cell lines.
+In addition to the training set, we tested our algorithm using phenotypic data from a very different model system. We used publicly available small molecule screening data from the [Broad Institute's](http://www.broadinstitute.org/) Cancer Therapeutics Response Portal [CTRP](http://www.broadinstitute.org/ctrp/). The data sets contain phenotypic information from 545 compounds tested on 860 different human cancer cell lines.
 
 ###*Compound selection and feature generation*
-Compounds were annotated by [SMILES](https://en.wikipedia.org/wiki/Simplified_molecular-input_line-entry_system) (Simplified Molecular Input Line Entry System) sequences, a molecular specification in the form of a line notation for describing the structure of chemical species using short ASCII strings. SMILES strings were collected from the compound documentation files and converted into [Structure Data File (SDF)](https://en.wikipedia.org/wiki/Chemical_table_file) format which can be read by most chemical informatics programs using the open source software [Open Babel](http://openbabel.org/wiki/Main_Page). Further processing of the SDF files was done using the chemical tools *cxcalc* (to derive physical properties) and *generatemd* (to derive structural properties) from the compounds. These tools are components of the commercial chemical engineering software package [ChemAxon](https://www.chemaxon.com/) which required an academic license that we obtained from the manufacturer specifically for this class project. The physical properties were comprised of the number of rotatable bonds (RB), partition coefficient (logp), polar surface area (tPSA), number of hydrogen accaptors (Hacc), number of hydrogen donors (Hdon), and molecular weight (MW). To derive structural properties of the compounds, Extended-Connectivity Fingerprints [ECFPs](https://docs.chemaxon.com/display/docs/Chemical+Fingerprints+-+Home) were calculated using the ChemAxon software. These chemical descriptors are designed for molecular characterization, similarity searching, and structure-activity modeling. They are among the most popular similarity search tools in drug discovery and are effectively used in a wide variety of applications.
+Compounds were annotated by [SMILES](https://en.wikipedia.org/wiki/Simplified_molecular-input_line-entry_system) (Simplified Molecular Input Line Entry System) sequences, a molecular specification in the form of a line notation for describing the structure of chemical species using short ASCII strings. SMILES strings were collected from the compound documentation files and converted into [Structure Data File (SDF)](https://en.wikipedia.org/wiki/Chemical_table_file) format which can be read by most chemical informatics programs using the open source software [Open Babel](http://openbabel.org/wiki/Main_Page). Further processing of the SDF files was done using the chemical tools *cxcalc* (to derive physical properties) and *generatemd* (to derive structural properties) from the compounds. These tools are components of the commercial chemical engineering software package [ChemAxon](https://www.chemaxon.com/) which required an academic license that we obtained from the manufacturer specifically for this class project. The physical properties were comprised of the number of rotatable bonds (RB), partition coefficient (logp), polar surface area (tPSA), number of hydrogen acceptors (Hacc), number of hydrogen donors (Hdon), and molecular weight (MW). To derive structural properties of the compounds, Extended-Connectivity Fingerprints [ECFPs](https://docs.chemaxon.com/display/docs/Chemical+Fingerprints+-+Home) were calculated using the ChemAxon software. These chemical descriptors are designed for molecular characterization, similarity searching, and structure-activity modeling. They are among the most popular similarity search tools in drug discovery and are effectively used in a wide variety of applications.
 
 ```{r eval = TRUE, echo = FALSE, message = FALSE}
 
@@ -136,7 +136,7 @@ p +
 
 ```
 
-Figure: Comparison of the physical properties of the compounds in the two data sets. Compounds shown as *Trainset* were randomly selected from the 4,182 zebrafish training data. Compounds shown as *Testset* were taken from the inependent cancer data set. This figure shows that the chemical properties of the compounds in the two data sets are quite different.
+Figure: Comparison of the physical properties of the compounds in the two data sets. Compounds shown as *Trainset* were randomly selected from the 4,182 zebrafish training data. Compounds shown as *Testset* were taken from the independent cancer data set. This figure shows that the chemical properties of the compounds in the two data sets are quite different.
 
 ```{r eval = TRUE, echo = FALSE, message = FALSE}
 #Function to exctract all ECFPs from the long list of strings
@@ -249,7 +249,7 @@ p +
   facet_grid(.~ SET_2, scales = 'free_y')
 ```
 
-Figure: Comparison of the structural properties of the compounds in the two data sets represented by ECFPs. Each ECFP in the independent test set was matched with the corresponding feature in the trainig set to ensure that training and testing are done with the same set of features. A large number of unique ECFPs in the training set could be matched with the features in the testset, although the test set contained a significant number of ECFPs that could not be matched. This is consistent with the figure above suggesting that the compounds in the testset were very differerent from those in the training set.
+Figure: Comparison of the structural properties of the compounds in the two data sets represented by ECFPs. Each ECFP in the independent test set was matched with the corresponding feature in the training set to ensure that training and testing are done with the same set of features. A large number of unique ECFPs in the training set could be matched with the features in the testset, although the test set contained a significant number of ECFPs that could not be matched. This is consistent with the figure above suggesting that the compounds in the testset were very different from those in the training set.
 
 ```{r, eval = TRUE, echo=FALSE, message=FALSE}
 #get the number of matched ECFPs
@@ -280,7 +280,7 @@ p +
 
 ```
 
-Figure: Total number of unique ECFPs (x 1000) in the test set (left) and in the training set (right). While the number of unique structural features was comparable in both data sets, about 30% of features in the test set did not appear in he training set (see figure below).
+Figure: Total number of unique ECFPs (x 1000) in the test set (left) and in the training set (right). While the number of unique structural features was comparable in both data sets, about 30% of features in the test set did not appear in the training set (see figure below).
 
 ```{r, echo=FALSE, message=FALSE}
 p <- ggplot(data = filter(match, fig == 'Testset'), aes(x = cat, y = value))
@@ -291,12 +291,12 @@ p +
   xlab('')
 ```
 
-Figure: This graph shows the proportion of ECFPs in the test set that were successfully matched to the ECFPs in the training set. Almost 30% of the structural features in the test set were different from those in the trainig set suggesting significant differences in the molecular strucures between the compounds of the two data sets.
+Figure: This graph shows the proportion of ECFPs in the test set that were successfully matched to the ECFPs in the training set. Almost 30% of the structural features in the test set were different from those in the training set suggesting significant differences in the molecular structures between the compounds of the two data sets.
 
 ##Results from the machine learning application
 ###ROC and Precision Recall Plots
 ###*AUC Summary*
-The following table summarises the ROC AUC score for each phenotype prediction made by the random forest machine learning algorithm. The P2, P7, and P8 phenotypes are "death" indicators which inicate that the zebrafish embryo died.  Death indicators P7 and P8 had the highest 2 AUC scores and P2 was 5th highest.
+The following table summarizes the ROC AUC score for each phenotype prediction made by the random forest machine learning algorithm. The P2, P7, and P8 phenotypes are "death" indicators which indicate that the zebrafish embryo died.  Death indicators P7 and P8 had the highest 2 AUC scores and P2 was 5th highest.
 
 ###*ROC AUC Scores For Each Phenotype Sorted by AUC Score*
 ```{r, echo=FALSE, message=FALSE}
@@ -304,7 +304,7 @@ The following table summarises the ROC AUC score for each phenotype prediction m
 kable(arrange(auc_scores, desc(auc_scores)))
 ```
 
-Phenotypes P11, P12, P13, and P14 were created as a logical "OR" from permutations of P2, P7, and P8 death indicators.  These derived death indicators also had high AUC scores as compared to other phenotypes.  In summary, 7 of the top 8 AUC scores were death indicators.  P4 was the only indicator in the top 8 that was not a death indicator.  The following table summarises the derived death indicators.
+Phenotypes P11, P12, P13, and P14 were created as a logical "OR" from permutations of P2, P7, and P8 death indicators.  These derived death indicators also had high AUC scores as compared to other phenotypes.  In summary, 7 of the top 8 AUC scores were death indicators.  P4 was the only indicator in the top 8 that was not a death indicator.  The following table summarizes the derived death indicators.
 
 ###*Derived Death Phenotype Indicator Table*
 Derived Death Indicator Phenotype | Logical Operation
@@ -445,7 +445,7 @@ The drug-screening.R application saves 4 files for analysis: model_results_list.
 ##Prediction of Compounds Efficacy on Cancer Cells
 
 The machine learning model generated and verified using the zebrafish model is used to predict drug efficacy on cancer cells. Although multiple phenotypes of zebra fish were used to generate the model, to simplify the study, only life/death is assessed for the cancer cells. Efficacy of compounds in killing cancer cells was predicted, the predicted data were evaluated by comparing to true experimental data showing efficacy, reflected by EC50, which is the amount of drug needed to kill half of the cells.
-        The "Predictions.csv" file summarised predicted probability of compounds being efficacious on causing several phenotypes of cancer cells and their impact on cancer cell viability. Because the majority of the probability numbers are very small (smaller than 0.5), to choose the best response to work with, the number of positive indicators were compared among those phenotypes. We determined that P11.true, which is the probability of the compounds being able to kill cancer cells, was the best predictor to be compared with the true experimental data. This will show whether the prediction model generated using the zebra fish model could be used on mammalian cells.
+        The "Predictions.csv" file summarized predicted probability of compounds being efficacious on causing several phenotypes of cancer cells and their impact on cancer cell viability. Because the majority of the probability numbers are very small (smaller than 0.5), to choose the best response to work with, the number of positive indicators were compared among those phenotypes. We determined that P11.true, which is the probability of the compounds being able to kill cancer cells, was the best predictor to be compared with the true experimental data. This will show whether the prediction model generated using the zebra fish model could be used on mammalian cells.
         The cancer cell viability data are downloaded from
 ftp://caftpd.nci.nih.gov/pub/dcc_ctd2/Broad/CTRPv2.0_2015_ctd2_ExpandedDataset/CTRPv2.0_2015_ctd2_ExpandedDataset.zip. The txt file: v20.data.curves_post_qc.txt has the EC50 values of each compound used in this study (apparent_ec50_umol). The EC50 values are later converted to arbitrary efficacy values for each compound. The experiment id (experiment_id) column has the information that later was related to the cell lines. File v20.meta.per_experiment.txt has the cell line id (master_ccl_id) that are later joined to the data.
 
@@ -531,7 +531,7 @@ colnames(score) <- c('master_ccl_id', 'score', 'n')
 
 Scores of the prediction is evaluated. The scores are calculated as the percentage of the predicted data that matches the experimentally predicted efficacy.
 
-The scores are ploted for each cell line:
+The scores are plotted for each cell line:
 ```{r, echo=FALSE, message=FALSE}
 library(ggplot2)
 score <- score[-which(score$master_ccl_id > 1000),]
@@ -539,7 +539,7 @@ p <- ggplot(score) + aes(x = master_ccl_id, y = score) + geom_point() + labs(tit
 p
 ```
 
-There are some variations in the prediction model's performance on predicting the compounds' efficacy on different cancer cell lines. However, again, this is not very representative since artifacts could be brought in when majority of the predictions are negative for the cancer cells. For example, when a cancer cell line has more predictions being false, then by tuning the threshold of EC50 and making the experimental data telling more inefficaccy of the compounds, the prediction could match the experimental data better.
+There are some variations in the prediction model's performance on predicting the compounds' efficacy on different cancer cell lines. However, again, this is not very representative since artifacts could be brought in when majority of the predictions are negative for the cancer cells. For example, when a cancer cell line has more predictions being false, then by tuning the threshold of EC50 and making the experimental data telling more inefficacy of the compounds, the prediction could match the experimental data better.
 
 Plot the distance between the cell lines:
 
@@ -557,7 +557,7 @@ In conclusion, the assessment of the prediction model derived from zebra fish da
 
 In fact, even if the predicted efficacy data showed good balance between positive and negative values, the model could just not work on the cancer cells. From biology understanding, zebra fish and cancer cells are too different from each other in terms of phenotypes and tolerance to the compounds. There is a high chance that the phenomena observed from zebra fish won't translate well to mammalian cancer cell lines.
 
-However, one potential drawback of the current project is that we are only looking at life/death of the cancer cells. There could be other phenotypes of the cells that were able to be predicted using the zebra fish model. Given the short amound of time for the project, we did not have a chance to evaluate other possibilities but this could be something to explore further.
+However, one potential drawback of the current project is that we are only looking at life/death of the cancer cells. There could be other phenotypes of the cells that were able to be predicted using the zebra fish model. Given the short amount of time for the project, we did not have a chance to evaluate other possibilities but this could be something to explore further.
 
 ##Conclusions:
-We established a machine learning framework to predict the physiological effects of an unknown drug on zebrafish embryo develpment. A data set consisting of more than 4,000 manual observations of 10 distinct physiological phenotypes was used to train a random forest classification algorithm. The achieved scores between 0.7 and 0.8 for some phenotypes suggest that the model may be used on much larger libraries with millions of compounds. We tested if our model could predict cell death in human cancer cells that were exposed to 545 different drugs. Physical and structural features were generated for these drugs and matched with the same features in the training set. Life/death predictions were then obtained from the random forest model. However, we found that the predicted outcomes did not compare well to the experimental result even when we varied the decision thresholds. There are several reasons why the zebrafish model failed to predict cell death on cancer cells. One important possibility is that the cancer compounds had physical and structural properties that were very distinct from those that were used for training the model. Expanding the training set to include more compounds with similar molecular features would most likely improve the accuracy of the model. Nevertheless, the results of the zebrafish model are encouraging. This model provides a resource of compound-activity associations in a vertebrate and demonstrates a means for combined in vivo/in silico screening with potentially immediate clinical relevance.
+We established a machine learning framework to predict the physiological effects of an unknown drug on zebrafish embryo development. A data set consisting of more than 4,000 manual observations of 10 distinct physiological phenotypes was used to train a random forest classification algorithm. The achieved scores between 0.7 and 0.8 for some phenotypes suggest that the model may be used on much larger libraries with millions of compounds. We tested if our model could predict cell death in human cancer cells that were exposed to 545 different drugs. Physical and structural features were generated for these drugs and matched with the same features in the training set. Life/death predictions were then obtained from the random forest model. However, we found that the predicted outcomes did not compare well to the experimental result even when we varied the decision thresholds. There are several reasons why the zebrafish model failed to predict cell death on cancer cells. One important possibility is that the cancer compounds had physical and structural properties that were very distinct from those that were used for training the model. Expanding the training set to include more compounds with similar molecular features would most likely improve the accuracy of the model. Nevertheless, the results of the zebrafish model are encouraging. This model provides a resource of compound-activity associations in a vertebrate and demonstrates a means for combined in vivo/in silico screening with potentially immediate clinical relevance.
