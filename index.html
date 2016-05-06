@@ -144,6 +144,11 @@
 
 <p><img src="images/roc_curve.png" alt="Training Data ROC Curves"></p>
 
+<h1>
+<a id="conclusions" class="anchor" href="#conclusions" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Conclusions</h1>
+
+<p>We established a machine learning framework to predict the physiological effects of an chemical compounds on zebrafish embryo development. A data set consisting of more than 4,000 manual observations of 10 distinct physiological phenotypes was used to train a random forest classification algorithm. The fact that the model achieved AUC scores between 0.7 and 0.8 for some phenotypes suggest that the model may be used on much larger libraries with millions of compounds. We tested if our model could predict cell death in human cancer cells that were exposed to 545 different drugs. Physical and structural features were generated for these drugs and matched with the same features in the training set. Life/death predictions were then obtained from the random forest model. However, we found that the predicted outcomes did not compare well to the experimental result even when we varied the decision thresholds. There are several reasons why the zebrafish model failed to predict cell death on cancer cells. One important possibility is that the cancer compounds had physical and structural properties that were very distinct from those that were used for training the model. Expanding the training set to include more compounds with similar molecular features would most likely improve the accuracy of the model. Nevertheless, the results of the zebrafish model are encouraging. This model provides a resource of compound-activity associations in a vertebrate and demonstrates a means for combined in vivo/in silico screening with potentially immediate clinical relevance.</p>
+
 <h2>
 <a id="independent-test-set-results" class="anchor" href="#independent-test-set-results" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Independent Test Set Results</h2>
 
