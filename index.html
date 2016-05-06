@@ -45,7 +45,22 @@
 <p><img src="images/Screening.jpg" alt="Screening Image"></p>
 
 <h1>
-<a id="data-sets" class="anchor" href="#data-sets" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Data Sets</h1>
+<a id="machine-learning-data-sets" class="anchor" href="#machine-learning-data-sets" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Machine Learning Data Sets</h1>
+
+<p>The machine learning data was created by generating a list of Extended Connectivity Fingerprints <a href="https://docs.chemaxon.com/display/docs/Chemical+Fingerprints+-+Home">ECFPs</a> for each chemical compound using <a href="https://docs.chemaxon.com/display/docs/Fingerprint+and+descriptor+generation+-+GenerateMD">GenerateMD</a>software by <a href="ChemAxon">https://www.chemaxon.com/</a>.  The ECFP fingerprints are binary values which represent specific features and characteristics the compound's molecular structure.  </p>
+
+<h2>
+<a id="training-data-set" class="anchor" href="#training-data-set" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Training Data Set</h2>
+
+<p>We used the GenerateMD software to generate 1,107 binary fingerprints for each of the 4,182 compounds in the zebrafish phenotype study.  The final training data set consisted of 10 different observed zebrafish phenotype outcomes and 4,182 binary ECFPs for each compound.</p>
+
+<h2>
+<a id="independent-data-set" class="anchor" href="#independent-data-set" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Independent Data Set</h2>
+
+<p>The independent data set was obtained from publicly available small molecule screening data from the <a href="http://www.broadinstitute.org/">Broad Institute's</a> Cancer Therapeutics Response Portal <a href="http://www.broadinstitute.org/ctrp/">(CTRP)</a>.  The data sets contained phenotypic information from 545 compounds tested on 860 different human cancer cell lines.  The same 4,182 binary ECFPs were generated for the independent data as was generated for the test data set. </p>
+
+<h1>
+<a id="random-forest-machine-learning-model" class="anchor" href="#random-forest-machine-learning-model" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Random Forest Machine Learning Model</h1>
 
 <h1>
 <a id="author-autobiographies" class="anchor" href="#author-autobiographies" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Author Autobiographies</h1>
