@@ -16,18 +16,9 @@
       <a href="https://github.com/wewilli1/drug-screening" class="btn">View on GitHub</a>
       <a href="https://github.com/wewilli1/drug-screening/zipball/master" class="btn">Download .zip</a>
       <a href="https://github.com/wewilli1/drug-screening/tarball/master" class="btn">Download .tar.gz</a>
-      <h2 class="project-tagline">Project Table of Contents</h2>
-      <a href="http://wewilli1.github.io/drug-screening/#summary" class="btn">Summary</a>
-      <a href="http://wewilli1.github.io/drug-screening/#the-zebrafish-model" class="btn">Zebrafish Model</a>
-      <a href="http://wewilli1.github.io/drug-screening/#random-forest-machine-learning-model" class="btn">Machine Learning</a>
-      <a href="http://wewilli1.github.io/drug-screening/#conclusions" class="btn">Conclusions</a>
     </section>
 
     <section class="main-content">
-<h1>Project YouTube Video</h1>
-<a href="http://www.youtube.com/watch?feature=player_embedded&v=nsFY75cgx2Y
-" target="_blank"><img src="http://img.youtube.com/vi/nsFY75cgx2Y/0.jpg"
-alt="YouTube Video" width="340" height="280" border="10" /></a>
       <h1>
 <a id="summary" class="anchor" href="#summary" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Summary</h1>
 
@@ -153,7 +144,8 @@ Unexpected toxic side effects are a major problem in drug development. Historica
 <h2>
 <a id="independent-test-set-results" class="anchor" href="#independent-test-set-results" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Independent Test Set Results</h2>
 
-<p>The random forest machine learning model used above was used to predict the effects of the compounds downloaded from the CTRP web site.  In this part of the study, the CTRP compounds are used to predict the same observed zebrafish phenotypes as predicted in the zebrafish training data.  The CTRP predicted values from the random forest machine learning algorithm were then compared to the the true experimental death phenotype data included in the CTRP data to determine how accurately the random forest model was able to predict CTRP death results.</p>
+<p>The random forest machine learning model used above was used to predict the effects of the compounds downloaded from the CTRP web site.  In this part of the study, the CTRP compounds are used to predict the same observed zebrafish phenotypes as predicted in the zebrafish training data.  The CTRP predicted values from the random forest machine learning algorithm were then compared to the the true experimental death phenotype data included in the CTRP data to determine how accurately the random forest model was able to predict CTRP death results.  The following graph shows that the predicted results for the CTRP data at a percentage cutoff of 0.6 for each phenotypes P1 through P14 (each bar in the graph represents a CTRP predicted phenotype).  For example, the P2 bar shows that approximately 0.8% of the compounds in the independent test set were predicted correct for the P2 phenotype.  The highest percentage of correct predictions was only a little over 1.2%.
+<img src="images/independent_set_P.png" alt="Percentage of P Plot"></p>
 
 <h1>
 <a id="conclusions" class="anchor" href="#conclusions" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Conclusions</h1>
@@ -186,6 +178,6 @@ Unexpected toxic side effects are a major problem in drug development. Historica
 
     </section>
 
-
+  
   </body>
 </html>
